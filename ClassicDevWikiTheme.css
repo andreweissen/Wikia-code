@@ -1,0 +1,357 @@
+/*
+ * @name:           ClassicDevWikiTheme
+ * @description:    Recreates the pre-Fandom Dev wiki look
+ * @author:         Eizen <http://dev.wikia.com/wiki/User:Eizen>
+ */
+
+/* General */
+
+body.wiki-dev.skin-oasis {
+    background: #efe8d5; 
+}
+
+body.wiki-dev #recirculation-footer-index-container,
+body.wiki-dev .WikiaRail .module,
+body.wiki-dev .WikiaPage .WikiaPageBackground {
+    background: #fdf6e3; /*Tan*/
+}
+
+body.wiki-dev .wds-community-header__wordmark img {
+    display: block;
+    background: url("https://vignette.wikia.nocookie.net/dev/images/8/89/Wiki-wordmark.png/revision/20160926164812") no-repeat;
+    box-sizing: border-box;
+    background-size: 250px 65px;
+    width: 250px;
+    height: 65px;
+    padding-left: 250px;
+}
+
+
+@media screen and (max-width: 1084px) {
+    body.wiki-dev .wds-community-header__wordmark img {
+        background-size: 70%!important;
+        size:70%!important;
+    }
+}
+
+body.wiki-dev #EditPageHeader span.wordmark a img {
+    width: 168px !important;
+    height: 44px !important;
+    margin-top: 6px !important;
+    zoom: 1;
+    opacity: 0;
+    filter: alpha(opacity=0);
+    -ms-filter: "alpha(opacity=0)";
+    -khtml-opacity: 0;
+    -moz-opacity: 0;
+}
+
+body.wiki-dev #EditPageHeader span.wordmark {
+    background: url("https://vignette.wikia.nocookie.net/dev/images/8/89/Wiki-wordmark.png/revision/20160926164812");
+    background-size: 168px 44px;
+    background-repeat: no-repeat;
+}
+
+/*body.wiki-dev .wds-community-header__wordmark { /*For Opera, Chrome
+    background:url("http://vignette1.wikia.nocookie.net/cohdev/images/a/a7/Wikiadev.png/revision/latest?cb=20161220124954") no-repeat;
+    width:250px;
+    display: block;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+@-moz-document url-prefix() { /* Workaround for Firefox
+    body.wiki-dev .wds-community-header__wordmark {
+        display: block;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+        background: url('http://vignette1.wikia.nocookie.net/cohdev/images/a/a7/Wikiadev.png/revision/latest?cb=20161220124954') no-repeat;
+        padding-top: 75px;
+    }
+}
+*/
+
+body.wiki-dev .category-gallery-item span.details {
+    background: #29a198;
+}
+
+/* DEPRECIATED FOOTER
+body.wiki-dev #SPOTLIGHT_FOOTER {
+    background-image: -moz-linear-gradient(top,rgba(242,242,242,0) 50%,#efe8d5 100%);
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(50%,rgba(242,242,242,0)),color-stop(100%,#efe8d5));
+    background-image: -o-linear-gradient(top,rgba(242,242,242,0) 50%,#efe8d5 100%);
+    background-image: -ms-linear-gradient(top,rgba(242,242,242,0) 50%,#efe8d5 100%);
+}
+*/
+
+/* Header */
+
+body.wiki-dev .WikiHeader .navbackground div,
+body.wiki-dev .WikiHeader > nav li.marked,
+body.wiki-dev .WikiHeader > nav li.marked > a,
+body.wiki-dev .WikiHeader .navbackground {
+    background: #29a198; /*Green*/
+}
+
+body.wiki-dev .WikiHeader > nav li {
+    border-bottom: 1px solid #29a198;
+}
+
+body.wiki-dev .WikiHeader > nav li.marked > a {
+    border-top: #2bccc4; /*Light green*/
+}
+
+body.wiki-dev .wds-community-header::before {
+    background: linear-gradient(to right,rgba(29,166,159,0.5),rgba(29,166,159,0.5)),linear-gradient(to left,rgba(29,166,169,0) 200px,#1da69f 430px);
+}
+
+body.wiki-dev .wds-community-header, body.wiki-dev .mcf-card-wiki-articles__header {
+    background-color:#1da69f!important;
+}
+
+body.wiki-dev .mcf-card-wiki-articles__header::before {
+    background-image:linear-gradient(to right,rgba(29,166,169,0.5),rgba(29,166,169,0.5)),linear-gradient(to left,transparent 50px, #1da69f 220px);
+}
+
+/* Buttons */
+
+body.wiki-dev a.wikia-button,
+body.wiki-dev .wikia-single-button a,
+body.wiki-dev .wikia-menu-button,
+body.wiki-dev input[type="submit"],
+body.wiki-dev input[type="reset"],
+body.wiki-dev input[type="button"],
+body.wiki-dev .button {
+    background-color: #1da69f;
+    border: 1px solid #1da69f;
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#35c9be),color-stop(65%,#1da69f));
+    background-image: -o-linear-gradient(top,#35c9be 35%,#1da69f 65%);
+    background-image: -ms-linear-gradient(top,#35c9be 35%,#1da69f 65%);
+}
+
+
+body.wiki-dev a.wikia-button:hover,
+body.wiki-dev .wikia-single-button a:hover,
+body.wiki-dev .wikia-menu-button:hover,
+body.wiki-dev input[type="submit"]:hover,
+body.wiki-dev input[type="reset"]:hover,
+body.wiki-dev input[type="button"]:hover,
+body.wiki-dev .button:hover {
+    background-color: #1a958e;
+    border: 1px solid #1a958e;
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#22c0b8),color-stop(65%,#1a958e));
+    background-image: -o-linear-gradient(top,#22c0b8 35%,#1a958e 65%);
+    background-image: -ms-linear-gradient(top,#22c0b8 35%,#1a958e 65%);
+}
+
+body.wiki-dev .wikia-menu-button > a:hover,
+body.wiki-dev .wikia-menu-button .drop:hover,
+body.wiki-dev .wikia-menu-button > li > a:hover {
+    background-color: #1a958e;
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#22c0b8),color-stop(65%,#1a958e));
+    background-image: -o-linear-gradient(top,#22c0b8 35%,#1a958e 65%);
+    background-image: -ms-linear-gradient(top,#22c0b8 35%,#1a958e 65%);
+}
+
+
+body.wiki-dev a.wikia-button:active,
+body.wiki-dev .wikia-single-button a:active,
+body.wiki-dev .wikia-menu-button:active,
+body.wiki-dev input[type="submit"]:active,
+body.wiki-dev input[type="reset"]:active,
+body.wiki-dev input[type="button"]:active,
+body.wiki-dev .button:active {
+    background-color: #22c0b8;
+    border: 1px solid #22c0b8;
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#1a958e),color-stop(65%,#22c0b8));
+    background-image: -o-linear-gradient(top,#1a958e 35%,#22c0b8 65%);
+    background-image: -ms-linear-gradient(top,#1a958e 35%,#22c0b8 65%);
+}
+
+body.wiki-dev .wikia-menu-button > a:active,
+body.wiki-dev .wikia-menu-button .drop:active,
+body.wiki-dev .wikia-menu-button > li > a:active {
+    background-color: #22c0b8;
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#1a958e),color-stop(65%,#22c0b8));
+    background-image: -o-linear-gradient(top,#1a958e 35%,#22c0b8 65%);
+    background-image: -ms-linear-gradient(top,#1a958e 35%,#22c0b8 65%);
+}
+
+body.wiki-dev a.wikia-button.secondary,
+body.wiki-dev .wikia-single-button a.secondary,
+body.wiki-dev .wikia-menu-button.secondary,
+body.wiki-dev input[type="submit"].secondary,
+body.wiki-dev input[type="reset"].secondary,
+body.wiki-dev input[type="button"].secondary, 
+body.wiki-dev .button.secondary, 
+body.wiki-dev button.secondary {
+    background-color: #e3ddcd;
+    background-image: -moz-linear-gradient(top,#fdf6e4 35%,#e3ddcd 65%);
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#fdf6e4),color-stop(65%,#e3ddcd));
+    background-image: -o-linear-gradient(top,#fdf6e4 35%,#e3ddcd 65%);
+    background-image: -ms-linear-gradient(top,#fdf6e4 35%,#e3ddcd 65%);
+    border: 1px solid #cac5b2;
+    color: #3a3a3a;
+}
+
+body.wiki-dev .WikiHeader .buttons > .contribute:hover,
+body.wiki-dev .wikia-menu-button.secondary.combined:hover,
+body.wiki-dev a.wikia-button.secondary:hover,
+body.wiki-dev .wikia-single-button a.secondary:hover,
+body.wiki-dev .wikia-menu-button.secondary:hover,
+body.wiki-dev input[type="submit"].secondary:hover,
+body.wiki-dev input[type="reset"].secondary:hover,
+body.wiki-dev input[type="button"].secondary:hover, 
+body.wiki-dev .button.secondary:hover, 
+body.wiki-dev button.secondary:hover {
+    background-color: #fdf6e4;
+    background-image: -moz-linear-gradient(top,#e3ddcd 35%,#fdf6e4 65%);
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#e3ddcd),color-stop(65%,#fdf6e4));
+    background-image: -o-linear-gradient(top,#e3ddcd 35%,#fdf6e4 65%);
+    background-image: -ms-linear-gradient(top,#e3ddcd 35%,#fdf6e4 65%);
+    border: 1px solid #cac5b2;
+    color: #3a3a3a;
+}
+
+body.wiki-dev #PageHeader  .wds-button-group > .wds-button:not(.wds-is-secondary):not(:last-child) {
+    border-right:none !important;
+}
+
+body.wiki-dev #PageHeader  .wds-button-group > .wds-dropdown:not(:first-child) .wds-button {
+    border-left:none !important;
+}
+
+body.wiki-dev #PageHeader .wds-button:not(.wds-is-secondary) {
+    background:#1da69f !important;
+    border:1px solid #1da69f;
+    color:#fff !important;
+}
+
+body.wiki-dev #PageHeader .wds-button:hover:not(.wds-is-secondary) {
+    background:#0e4f4c !important;
+    border:1px solid #0e4f4c;
+    color:#fff !important;
+}
+
+body.wiki-dev #PageHeader .wds-button:acitve:not(.wds-is-secondary) {
+    background:#0e4f4c !important;
+    border:1px solid #0e4f4c;
+    color:#fff !important;
+}
+
+body.wiki-dev #PageHeader .wds-button:focus:not(.wds-is-secondary) {
+    background:#0e4f4c !important;
+    border:1px solid #0e4f4c;
+    color:#fff !important;
+}
+
+body.wiki-dev .wds-community-header .wds-button .wds-is-secondary {
+    border-color:white;
+    background-color:rgba(29,166,159,0.2)!important;
+}
+
+body.wiki-dev .wds-community-header .wds-button .wds-is-secondary:hover {
+    border-color:#d3efed!important;
+    background-color:rgba(29,166,159,0.4)!important;
+}
+
+body.wiki-dev .wds-community-header .wds-button .wds-is-secondary:hover svg {
+    fill:#d3efed!important;
+}
+
+/* User Page */
+
+body.wiki-dev .WikiaUserPagesHeader {
+    background-color: #efe8d5;
+    background-image: -moz-linear-gradient(top,#fdf6e3 0%,#efe8d5 100%);
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(0%,#fdf6e3),color-stop(100%,#efe8d5));
+    background-image: -o-linear-gradient(top,#fdf6e3 0%,#efe8d5 100%);
+    background-image: -ms-linear-gradient(top,#fdf6e3 0%,#efe8d5 100%);
+}
+
+body.wiki-dev .UserProfileMasthead .masthead-info {
+    background: #fdf6e3;
+}
+
+body.wiki-dev .UserProfileMasthead .masthead-info-lower:before {
+    border-color: #fdf6e3 #fdf6e3 transparent transparent;
+}
+
+body.wiki-dev .UserProfileMasthead .masthead-info hgroup {
+    background-color: #1da69f;
+    border: 1px solid #1da69f;
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(35%,#35c9be),color-stop(65%,#1da69f));
+    background-image: -o-linear-gradient(top,#35c9be 35%,#1da69f 65%);
+    background-image: -ms-linear-gradient(top,#35c9be 35%,#1da69f 65%);
+}
+
+body.wiki-dev .UserProfileMasthead .masthead-info .tag {
+    background: #0b938b;
+}
+
+body.wiki-dev .tabs .selected a {
+    background: #fdf6e3;
+}
+
+/* Infoboxes */
+
+body.wiki-dev .portable-infobox {
+    background: #e8ebe2;
+}
+ 
+body.wiki-dev .portable-infobox .pi-title {
+    background: #e8ebe2;
+}
+ 
+body.wiki-dev .portable-infobox .pi-header {
+    background-color: #d4d7cd;
+}
+ 
+body.wiki-dev .portable-infobox .pi-header,
+body.wiki-dev .portable-infobox .pi-title {
+    color:#000;
+}
+
+body.wiki-dev .pi-border-color {
+    border-color: #ced8d7;
+}
+
+/* Tables */
+
+body.wiki-dev table.wikitable > tr > th,
+body.wiki-dev table.wikitable > * > tr > th,
+body.wiki-dev table.wikitable, 
+body.wiki-dev table.prettytable {
+    background:#fdf6e3; /* Tan */
+}
+ 
+/* ?action=edit */
+
+body.wiki-dev .rail-auto-height,
+body.wiki-dev #EditPageRail,
+body.wiki-dev .EditPage {
+    background: #fdf6e3;
+}
+
+body.wiki-dev .EditPage .module > .module_content,
+body.wiki-dev .EditPageHeader {
+    background: #fdf6e3;
+    box-shadow: none;
+}
+
+body.wiki-dev .EditPage .module_page_controls .preview_box .preview_icon,
+body.wiki-dev .EditPage .module_page_controls #wpSummary,
+body.wiki-dev .CategorySelect.editPage .categories,
+body.wiki-dev .CategorySelect.editPage .input {
+    background-color: #f9f9f9; /*Lighter grey*/
+}
+
+body.wiki-dev .EditPageToolbar,
+body.wiki-dev .EditPage .module > h3 {
+    background-color: #efe8d5;
+    background-image: -moz-linear-gradient(top,white 30%,#efe8d5 100%);
+    background-image: -webkit-gradient(linear,0% 0%,0% 100%,color-stop(30%,white),color-stop(100%,#efe8d5));
+    background-image: -o-linear-gradient(top,white 30%,#efe8d5 100%);
+    background-image: -ms-linear-gradient(top,white 30%,#efe8d5 100%);
+}
+
