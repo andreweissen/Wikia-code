@@ -52,8 +52,8 @@ require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
             talk: "I miei messaggi"
         },
         "ja": {
-            blog: "私のブログ",
-            contribs: "私の貢献",
+            blog: "ブログ",
+            contribs: "編集履歴",
             talk: "トーク"
         },
         "ko": {
