@@ -8,18 +8,22 @@
  * @external "wikia.window"
  * @external "mw"
  */
- 
+
 /*jslint browser, this:true */
 /*global mw, jQuery, window, require, wk */
- 
+
 require(["mw", "wikia.window"], function (mw, wk) {
     "use strict";
- 
-    if (window.isPTPLoaded || jQuery("#pseudotalkpages-a").exists()) {
+
+    if (
+        window.isPTPLoaded ||
+        jQuery("#pseudotalkpages-a").exists() ||
+        wk.wgNamespaceNumber === -1
+    ) {
         return;
     }
     window.isPTPLoaded = true;
- 
+
     /**
      * @class PseudoTalkPages
      * @classdesc The central class, etc etc
@@ -36,7 +40,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
             "zh": "談話頁",
             "es": "Página de discusión"
         },
- 
+
         /**
          * @method returnSkinContent
          * @description Method returns the name of the user page owner and the
@@ -46,7 +50,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
          */
         returnSkinContent: function () {
             var $skinSpecificContent = [];
- 
+
             switch (wk.skin) {
             case "oasis":
             case "wikia":
@@ -65,10 +69,10 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 );
                 break;
             }
- 
+
             return $skinSpecificContent;
         },
- 
+
         /**
          * @method constructItem
          * @description Method returns a link inside a list item
@@ -87,7 +91,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 }, $text)
             ));
         },
- 
+
         /**
          * @method init
          * @description Method assembles all the content and appends it after
@@ -99,19 +103,19 @@ require(["mw", "wikia.window"], function (mw, wk) {
                     this.i18n[wk.wgUserLanguage] ||
                     this.i18n[wk.wgUserLanguage.split("-")[0]] ||
                     this.i18n.en;
- 
+
             var $skinContent = this.returnSkinContent();
             var $page = "User:" + $skinContent[0] + "/Talk";
             var $tabElement = this.constructItem(mw.util.getUrl($page), $lang);
- 
+
             if (wk.wgPageName.split("/")[1] !== "Talk") {
                 jQuery($skinContent[1]).after($tabElement);
             }
- 
+
             mw.hook("pseudotalkpages.loaded").fire();
         }
     };
- 
+
     mw.loader.using("mediawiki.util").then(
         jQuery.proxy(PseudoTalkPages.init, PseudoTalkPages)
     );
