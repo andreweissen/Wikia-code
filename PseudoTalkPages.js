@@ -103,8 +103,15 @@ require(["mw", "wikia.window"], function (mw, wk) {
                     this.i18n[wk.wgUserLanguage] ||
                     this.i18n[wk.wgUserLanguage.split("-")[0]] ||
                     this.i18n.en;
-
             var $skinContent = this.returnSkinContent();
+
+            if ( // If is anon...
+                mw.util.isIPv4Address($skinContent[0]) ||
+                mw.util.isIPv6Address($skinContent[0])
+            ) {
+                return;
+            }
+
             var $page = "User:" + $skinContent[0] + "/Talk";
             var $tabElement = this.constructItem(mw.util.getUrl($page), $lang);
 
