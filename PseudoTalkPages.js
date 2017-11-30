@@ -12,13 +12,13 @@
 /*jslint browser, this:true */
 /*global mw, jQuery, window, require, wk */
 
-require(["mw", "wikia.window"], function (mw, wk) {
+require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
     "use strict";
 
     if (
         window.isPTPLoaded ||
         jQuery("#pseudotalkpages-a").exists() ||
-        wk.wgNamespaceNumber === -1
+        jQuery.inArray(wk.wgNamespaceNumber, [2, 500, 1200]) === -1
     ) {
         return;
     }
