@@ -110,7 +110,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                                 $fileObject = {};
                                 $fileObject.name = $file + $suffix;
                                 $fileObject.href =
-                                    "http://c" + wk.wgCookieDomain +
+                                    "//c" + wk.wgCookieDomain +
                                     wk.wgArticlePath.replace(
                                         "$1",
                                         "Special:MyPage/" +
