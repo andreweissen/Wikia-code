@@ -118,7 +118,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                     this.i18n[wk.wgUserLanguage] ||
                     this.i18n[wk.wgUserLanguage.split("-")[0]] ||
                     this.i18n.en;
-            var $href = "http://c" + wk.wgCookieDomain +
+            var $href = "//c" + wk.wgCookieDomain +
                     wk.wgArticlePath.replace("$1", "Special:UserActivity");
             var $skinContent = this.returnSkinContent();
             var $element = this.constructItem($href, $lang);
