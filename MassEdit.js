@@ -1,5 +1,5 @@
 /**
- * MassEdit/code2.js
+ * MassEdit/code.js
  * @file Allows for addition/deletion of content from pages
  * @author Eizen <dev.wikia.com/wiki/User_talk:Eizen>
  * @external "mediawiki.util"
@@ -8,199 +8,54 @@
  * @external "wikia.window"
  * @external "mw"
  */
- 
+
 /*jslint browser, this:true */
 /*global mw, jQuery, window, require, wk, ui */
- 
-require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
+
+require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
+        function (jQuery, mw, wk, ui) {
     "use strict";
- 
+
     if (jQuery("#massEdit-li").exists() || window.isMassEditLoaded) {
         return;
     }
     window.isMassEditLoaded = true;
- 
-    // Language stuff; remember to leave $1 in your translations
-    var $i18n = {
-        "en": { // English
-            itemTitle: "MassEdit",
-            modalTitle1: "Select Action",
-            modalTitle2: "Enter Content",
-            modalTitle3: "Enter Pages",
-            dropdownPrepend: "Prepend content to page(s)",
-            dropdownAppend: "Append content to page(s)",
-            dropdownDelete: "Delete content from page(s)",
-            buttonCancel: "Cancel",
-            buttonSubmit: "Submit",
-            buttonClear: "Clear",
-            modalTemplateplaceholder: "Page content may take the form of text, wikitext, or HTML.",
-            modalPagesplaceholder: "Example 1\nExample 2\nExample 3",
-            modalLog: "MassEdit log",
-            loading: "Editing...",
-            noOptionSelected: "Error: Please select an action to perform before submitting.",
-            editSuccess: "Success: $1 successfully edited!",
-            editFailure: "Error: $1 not edited. Please try again.",
-            modalError: "Error: Use of some characters is prohibited for security reasons.",
-            modalUserRights: "Error: Incorrect user rights group.",
-            meEditSummary: "Editing page content",
-            meScript: "script"
-        },
-        "be": { // Belarusian
-            itemTitle: "MassEdit",
-            modalTitle1: "Выберыце дзею",
-            modalTitle2: "Пакажыце кантэнт",
-            modalTitle3: "Пакажыце старонкі",
-            dropdownPrepend: "Кантэнт, што дадаецца на старонку(і)",
-            dropdownAppend: "Даданне кантэнту на старонку(і)",
-            dropdownDelete: "Delete content from page(s)",
-            buttonCancel: "Скасаванне",
-            buttonCreate: "Стварыць",
-            buttonClear: "Ачысціць",
-            modalTemplateplaceholder: "Змесціва старонкі можа быць пададзена ў выглядзе тэксту, вікі-тэксту ці HTML-кода.",
-            modalPagesplaceholder: "Пример 1\nПример 2\nПример 3",
-            modalLog: "Часопіс MassEdit",
-            loading: "Загрузка…",
-            noOptionSelected: "Абмыла: калі ласка, выберыце дзеянне, якое трэба зрабіць перад захаваннем.",
-            editSuccess: "$1 паспяхова адрэдагавана!",
-            editFailure: "Абмыла: $1 не адрэдагавана. Калі ласка, паспрабуйце зноў.",
-            modalError: "Абмыла: выкарыстанне некаторых знакаў забаронена па меркаваннях бяспекі.",
-            modalUserRights: "Абмыла: няправільныя групы праў удзельнікаў.",
-            meEditSummary: "Старонка рэдагавання кантэнту",
-            meScript: "скрыпт"
-        },
-        "nl": { // Dutch
-            itemTitle: "MassEdit",
-            modalTitle1: "Actie selecteren",
-            modalTitle2: "Inhoud invoeren",
-            modalTitle3: "Pagina\"s opgeven",
-            dropdownPrepend: "Inhoud boven aan de pagina\"s toevoegen",
-            dropdownAppend: "Inhoud onderaan aan de pagina\"s toevoegen",
-            dropdownDelete: "Delete content from page(s)",
-            buttonCancel: "Annuleren",
-            buttonCreate: "Opslaan",
-            buttonClear: "Leegmaken",
-            modalTemplateplaceholder: "Paginainhoud kan tekst, wikitekst of HTML zijn.",
-            modalPagesplaceholder: "Voorbeeld 1\nVoorbeeld 2\nVoorbeeld 3",
-            modalLog: "MassEdit logboek",
-            loading: "Bewerken...",
-            noOptionSelected: "Fout: Selecteer een actie om uit te voeren alvorens op te slaan.",
-            editSuccess: "Succes: $1 succesvol bewerkt!",
-            editFailure: "Fout: $1 niet bewerkt. Probeer het opnieuw.",
-            modalError: "Fout: Gebruik van sommige karakters is niet toegestaan vanwege veiligheidsredenen.",
-            modalUserRights: "Fout: Onjuiste gebruikersgroep.",
-            meEditSummary: "Paginainhoud bewerkt",
-            meScript: "script"
-        },
-        "ru": { // Russian
-            itemTitle: "MassEdit",
-            modalTitle1: "Выберите действие",
-            modalTitle2: "Укажите контент",
-            modalTitle3: "Укажите страницы",
-            dropdownPrepend: "Контент, добавляемый на страницу(ы)",
-            dropdownAppend: "Добавление контента на страницу(ы)",
-            dropdownDelete: "Delete content from page(s)",
-            buttonCancel: "Отмена",
-            buttonCreate: "Создать",
-            buttonClear: "Очистить",
-            modalTemplateplaceholder: "Содержимое страницы может быть представлено в виде текста, вики-текста или HTML-кода.",
-            modalPagesplaceholder: "Пример 1\nПример 2\nПример 3",
-            modalLog: "Журнал MassEdit",
-            loading: "Загрузка…",
-            noOptionSelected: "Ошибка: пожалуйста, выберите действие, которое нужно сделать перед сохранением.",
-            editSuccess: "$1 успешно отредактировано!",
-            editFailure: "Ошибка: $1 не отредактировано. Пожалуйста, попробуйте снова.",
-            modalError: "Ошибка: использование некоторых символов запрещено по соображениям безопасности.",
-            modalUserRights: "Ошибка: неправильные группы прав участников.",
-            meEditSummary: "Страница редактирования контента",
-            meScript: "скрипт"
-        },
-        "uk": { // Ukrainian
-            itemTitle: "MassEdit",
-            modalTitle1: "Виберіть дію",
-            modalTitle2: "Вкажіть вміст",
-            modalTitle3: "Вкажіть сторінки",
-            dropdownPrepend: "Вміст, доданий на сторінку(и)",
-            dropdownAppend: "Додавання вмісту на сторінку(и)",
-            dropdownDelete: "Delete content from page(s)",
-            buttonCancel: "Скасування",
-            buttonCreate: "Створити",
-            buttonClear: "Очистити",
-            modalTemplateplaceholder: "Вміст сторінки може бути представлено у вигляді тексту, вікі-тексту або HTML-коду.",
-            modalPagesplaceholder: "Приклад 1\nПриклад 2\nПриклад 3",
-            modalLog: "Журнал MassEdit",
-            loading: "Завантаження…",
-            noOptionSelected: "Помилка: будь ласка, виберіть дію, яку потрібно зробити перед збереженням.",
-            editSuccess: "$1 успішно відредаговано!",
-            editFailure: "Помилка: $1 не відредаговано. Будь ласка, спробуйте знову.",
-            modalError: "Помилка: використання деяких символів заборонено з міркувань безпеки.",
-            modalUserRights: "Помилка: неправильні групи прав користувачів.",
-            meEditSummary: "Сторінка редагування вмісту",
-            meScript: "скрипт"
-        }
-    };
- 
-    var $lang = jQuery.extend(
-        $i18n.en,
-        $i18n[wk.wgUserLanguage.split("-")[0]],
-        $i18n[wk.wgUserLanguage]
-    );
- 
+
+    if (!window.dev || !window.dev.i18n) {
+        wk.importArticle({
+            type: "script",
+            article: "u:dev:MediaWiki:I18n-js/code.js"
+        });
+    }
+    var $i18n;
+
     /**
      * @class MassEdit
      * @classdesc The central MassEdit class
      */
     var MassEdit = {
-        modalHTML:
-            "<form id='massEdit-modal-form' class='WikiaForm '>" +
-                "<fieldset>" +
-                    "<p>" + $lang.modalTitle1 +
-                        "<br />" +
-                        "<select size='1' id='massEdit-menu' name='action'>" +
-                            "<option selected=''>" +
-                                $lang.modalTitle1 +
-                            "</option>" +
-                            "<option value='prepend'>" +
-                                $lang.dropdownPrepend +
-                            "</option>" +
-                            "<option value='append'>" +
-                                $lang.dropdownAppend +
-                            "</option>" +
-                            "<option value='append'>" +
-                                $lang.dropdownDelete +
-                            "</option>" +
-                        "</select>" +
-                        "<br />" +
-                    "</p>" +
-                    "<br />" +
-                    "<p>" + $lang.modalTitle2 +
-                        "<br />" +
-                        "<textarea id='massEdit-content-value' placeholder='" +
-                            $lang.modalTemplateplaceholder +
-                        "'/>" +
-                        "<br />" +
-                    "</p>" +
-                    "<br />" +
-                    "<p>" + $lang.modalTitle3 +
-                        "<br />" +
-                        "<textarea id='massEdit-pages-value' placeholder='" +
-                            $lang.modalPagesplaceholder +
-                        "'/>" +
-                        "<br />" +
-                    "</p>" +
-                "</fieldset>" +
-                "<br />" +
-                "<hr>" +
-            "</form>" +
-            "<p>" + $lang.modalLog + "</p>" +
-            "<div id='massEdit-log'></div>",
         hasRights: /(bureaucrat|sysop|content-moderator|bot)/
             .test(wk.wgUserGroups.join(" ")),
-        legalChars: new RegExp('^[' + wk.wgLegalTitleChars + ']*$'),
+        legalChars: new RegExp("^[" + wk.wgLegalTitleChars + "]*$"),
+
+        /**
+         * @method addLogEntry
+         * @description Method allows for quick adding of a MassEdit log entry
+         *              to the appropriate text field.
+         * @param {String} field - The name of the JSON field
+         * @returns {void}
+         */
+        addLogEntry: function (field) {
+            jQuery("#massEdit-log").prepend($i18n.msg(field).plain() + "<br/>");
+        },
 
         /**
          * @method returnNode
-         * @description returns class/id to which the item is appended
-         * @returns {string}
+         * @description Method returns the id of the location to which the
+         *              constructed link item is to be appended. For Oasis, this
+         *              is the "My Tools" menu along with the other Mass family
+         *              tools. For Monobook et al, this is the Toolbox module.
+         * @returns {String}
          */
         returnNode: function () {
             switch (wk.skin) {
@@ -216,9 +71,11 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
 
         /**
          * @method constructItem
-         * @description assembles toolbar/toolbox item
-         * @param {string} $text
-         * @returns {mw.html.element}
+         * @description Method returns a completed <code>String</code>
+         *              representing the menu link item. Is comprised of a
+         *              link inside a list item.
+         * @param {string} $text - Text to be displayed in the item and title
+         * @returns {String}
          */
         constructItem: function ($text) {
             return mw.html.element("li", {
@@ -234,16 +91,17 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
         },
 
         /**
-         * @method checkPage
-         * @description compares if page name matches accepted character regex
-         *              returns true/false flag
-         * @param {string} $page
+         * @method isLegalPage
+         * @description Utility function used to test if inputted page name
+         *              matches the legal characters regex. Returns a boolean
+         *              flag depending on result.
+         * @param {string} $page - Inputter page name
          * @returns {boolean}
          */
-        checkPage: function ($page) {
+        isLegalPage: function ($page) {
             if(!this.legalChars.test($page)) {
                 jQuery("#massEdit-modal-form")[0].reset();
-                jQuery("#massEdit-log").append($lang.modalError + "<br/>");
+                this.addLogEntry("modalError");
                 return false;
             } else {
                 return true;
@@ -252,10 +110,15 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
 
         /**
          * @method displayModal
-         * @description Assembles and displays the main UI
+         * @description Method constructs and displays the main user interface.
+         *              Injects custom CSS prior to construction and handles all
+         *              button click events.
+         * @param {String} $modalHTML - The modal HTML layout
          * @returns {void}
          */
-        displayModal: function () {
+        displayModal: function ($modalHTML) {
+            var that = this;
+
             mw.util.addCSS(
                 "#massEdit-menu { " +
                     "width: 100%;" +
@@ -278,17 +141,17 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
                     "padding:5px;" +
                 "}"
             );
- 
+
             ui.init(["modal"]).then(function (modal) {
                 var config = {
                     vars: {
                         id: "massEdit-modal",
                         size: "medium",
-                        title: $lang.itemTitle,
-                        content: MassEdit.modalHTML,
+                        title: $i18n.msg("itemTitle").plain(),
+                        content: $modalHTML,
                         buttons: [{
                             vars: {
-                                value: $lang.buttonCancel,
+                                value: $i18n.msg("buttonCancel").plain(),
                                 classes: ["normal", "primary"],
                                 data: [{
                                     key: "event",
@@ -297,7 +160,7 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
                             }
                         }, {
                             vars: {
-                                value: $lang.buttonClear,
+                                value: $i18n.msg("buttonClear").plain(),
                                 classes: ["normal", "primary"],
                                 data: [{
                                     key: "event",
@@ -306,7 +169,7 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
                             }
                         }, {
                             vars: {
-                                value: $lang.buttonSubmit,
+                                value: $i18n.msg("buttonSubmit").plain(),
                                 classes: ["normal", "primary"],
                                 data: [{
                                     key: "event",
@@ -316,21 +179,20 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
                         }]
                     }
                 };
- 
+
                 modal.createComponent(config, function (massEditModal) {
                     massEditModal.bind("cancel", function () {
                         massEditModal.trigger("close");
                     });
- 
+
                     massEditModal.bind("clear", function () {
                         jQuery("#massEdit-modal-form")[0].reset();
                     });
- 
+
                      massEditModal.bind("submit", function () {
-                        //jQuery.proxy(MassEdit.main, MassEdit);
-                        MassEdit.main();
+                        that.main();
                     });
- 
+
                     massEditModal.show();
                 });
             });
@@ -338,10 +200,13 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
 
         /**
          * @method handleWikitext
-         * @description assembles/organizes data for page editing
-         * @param {json} $data
-         * @param {string} $page
-         * @param {string} $replace
+         * @description Callback function for <code>getWikitext</code>. Sifts
+         *              through included data and passes relevant bits to the
+         *              <code>editPage</code> method. Used exclusively by the
+         *              "Delete Content" dropdown option.
+         * @param {json} $data - Passed data from <code>getWikitext</code>
+         * @param {String} $page - Specific page in question
+         * @param {String} $replace - Text to be replaced by an empty String
          * @returns {void}
          */
         handleWikitext: function ($data, $page, $replace) {
@@ -350,25 +215,22 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
             var $timestamp = $result.revisions[0].timestamp;
             var $starttimestamp = $result.starttimestamp;
             var $token = $result.edittoken;
- 
+
             $text = $text.replace(new RegExp($replace, "g"), "");
- 
-            MassEdit.editPage(
-                $page,
-                $text,
-                "delete",
-                $timestamp,
-                $starttimestamp,
-                $token
-            );
+
+            MassEdit.editPage($page, $text, "delete", $timestamp,
+                $starttimestamp, $token);
         },
 
         /**
          * @method getWikitext
-         * @description retrieves data related to a page's wikitext content
-         * @param {string} $page
-         * @param {string} $replace
-         * @param {function} callback
+         * @description This method retrieves the content of the inputted page,
+         *              including information about its time of creation and
+         *              relevant timestamp info. Used exclusively by the "Delete
+         *              Content" dropdown option
+         * @param {string} $page - The page in question
+         * @param {string} $replace - The text to be replaced in the callback
+         * @param {function} callback - The callback handler
          */
         getWikitext: function ($page, $replace, callback) {
             jQuery.ajax({
@@ -393,40 +255,39 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
 
         /**
          * @method editPage
-         * @description main function for editing page content
-         * @param {string} $page
-         * @param {string} $content
-         * @param {string} $action
-         * @param {string} $timestamp (optional)
-         * @param {string} $starttimestamp (optional)
-         * @param {string} $token (optional)
+         * @description The one-size-fits-all editing handler for use by all
+         *              three main MassEdit functions. Takes several different
+         *              numbers of input parameters depending on the action to
+         *              be taken by the handler.
+         * @param {string} $page - The page to be edited
+         * @param {string} $content - The content to be added to the page
+         * @param {string} $action - Editing action (prepend, append, delete)
+         * @param {string} $timestamp - Optional, for delete option only
+         * @param {string} $starttimestamp - Optional, for delete option only
+         * @param {string} $token - Optional, for delete option only
          * @returns {void}
          */
-        editPage: function (
-            $page,
-            $content,
-            $action,
-            $timestamp,
-            $starttimestamp,
-            $token
-        ) {
+        editPage: function ($page, $content, $action, $timestamp,
+                $starttimestamp, $token) {
+
+            // Default base properties
             var $params = {
                 action: "edit",
                 minor: true,
                 bot: true,
                 title: $page,
-                summary: $lang.meEditSummary + " ([[w:c:dev:MassEdit|" +
-                        $lang.meScript + "]])"
+                summary: this.config.editSummary
             };
- 
+
+            // Set additional Object properties depending on action to be taken
             switch ($action) {
             case "prepend":
                 $params.prependtext = $content;
-                $params.token = mw.user.tokens.get("editToken")
+                $params.token = mw.user.tokens.get("editToken");
                 break;
             case "append":
                 $params.appendtext = $content;
-                $params.token = mw.user.tokens.get("editToken")
+                $params.token = mw.user.tokens.get("editToken");
                 break;
             case "delete":
                 $params.text = $content;
@@ -435,79 +296,97 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
                 $params.token = $token;
                 break;
             }
- 
+
             jQuery.ajax({
                 type: "POST",
                 url: mw.util.wikiScript("api"),
                 data: $params
             }).success(function ($data) {
                 jQuery("#massEdit-modal-form")[0].reset();
-                jQuery("#massEdit-log").append(
-                    $lang.editSuccess.replace("$1", $page) + "<br/>"
+                jQuery("#massEdit-log").prepend(
+                    $i18n.msg("editSuccess").plain().replace("$1", $page) +
+                    "<br/>"
                 );
             }).fail(function ($data) {
                 jQuery("#massEdit-modal-form")[0].reset();
-                jQuery("#massEdit-log").append(
-                    $lang.editFailure.replace("$1", $page) + "<br/>"
+                jQuery("#massEdit-log").prepend(
+                    $i18n.msg("editFailure").plain().replace("$1", $page) +
+                    "<br/>"
                 );
             });
         },
 
         /**
          * @method main
-         * @description the main method of the program, coordinates program flow
+         * @description The main method handles the collection of user input and
+         *              invokes method based on the user's desired action. If
+         *              the user is not in the proper user rights group, access
+         *              is denied. If no action is selected, the user is
+         *              prompted to select an action. <code>setInterval</code>
+         *              is employed to ensure that the script does not make too
+         *              many consecutive content GETs or edit POSTs; replaces
+         *              <code>forEach</code> implementation.
          * @returns {void}
          */
         main: function () {
             if (!this.hasRights) {
                 jQuery("#massEdit-modal-form")[0].reset();
-                jQuery("#massEdit-log").append($lang.modalUserRights + "<br/>");
+                this.addLogEntry("modalUserRights");
                 return;
             } else {
                 var that = this;
+
+                // User input
                 var $index = jQuery("#massEdit-menu")[0].selectedIndex;
                 var $input = jQuery("#massEdit-content-value")[0].value;
                 var $pages = jQuery("#massEdit-pages-value")[0]
                         .value.split(/[\n]+/);
- 
+
+                // Fields used for setInterval iterations below
+                var $counter = 0;
+                var $editInterval;
+
                 switch ($index) {
                 case 0: // No action selected
-                    jQuery("#massEdit-modal-form")[0].reset();
-                    jQuery("#massEdit-log")
-                            .append($lang.noOptionSelected + "<br/>");
+                    this.addLogEntry("noOptionSelected");
                     break;
                 case 1:
-                case 2: // Edit methods
+                case 2: // Edit methods (prepend and append)
                     var $action;
-                    jQuery("#massEdit-log").append($lang.loading + "<br/>");
+                    this.addLogEntry("loading");
+
                     if ($index === 1) {
                         $action = "prepend";
                     } else {
                         $action = "append";
                     }
- 
-                    $pages.forEach(function ($page) {
-                        var $isLegalPage = that.checkPage($page);
- 
-                        if ($isLegalPage) {
-                            that.editPage($page, $input, $action);
+
+                    $editInterval = setInterval(function () {
+                        if (that.isLegalPage($pages[$counter])) {
+                            that.editPage($pages[$counter], $input, $action);
                         }
-                    });
+                        $counter++;
+                        if ($counter === $pages.length) {
+                            clearInterval($editInterval);
+                        }
+                    }, that.config.editInterval);
                     break;
-                case 3: // Find and replace
-                    jQuery("#massEdit-log").append($lang.loading + "<br/>");
- 
-                    $pages.forEach(function ($page) {
-                        var $isLegalPage = that.checkPage($page);
- 
-                        if ($isLegalPage) {
+                case 3: // Find and delete
+                    this.addLogEntry("loading");
+
+                    $editInterval = setInterval(function () {
+                        if (that.isLegalPage($pages[$counter])) {
                             that.getWikitext(
-                                $page,
+                                $pages[$counter],
                                 $input,
                                 that.handleWikitext
                             );
                         }
-                    });
+                        $counter++;
+                        if ($counter === $pages.length) {
+                            clearInterval($editInterval);
+                        }
+                    }, that.config.editInterval);
                     break;
                 }
             }
@@ -515,22 +394,85 @@ require(["mw", "wikia.window", "wikia.ui.factory"], function (mw, wk, ui) {
 
         /**
          * @method init
-         * @description initializes the program, assembling the toolbar link and
-                        handling click events
+         * @description Method initializes the program, assembling the toolbar
+                        link and handling click events.
          * @returns {void}
          */
-        init: function () {
+        init: function ($lang) {
             var that = this;
-            var $toolbarElement = this.constructItem($lang.itemTitle);
+
+            $lang.useUserLang();
+            $i18n = $lang;
+
+            this.config = jQuery.extend(
+                {
+                    editInterval: 500,
+                    editSummary: $i18n.msg("meEditSummary").plain() +
+                        " ([[w:c:dev:MassEdit|" +
+                        $i18n.msg("meScript").plain() + "]])"
+                },
+                window.massEditConfig
+            );
+
+            var $modalHTML =
+            "<form id='massEdit-modal-form' class='WikiaForm '>" +
+                "<fieldset>" +
+                    "<p>" + $i18n.msg("modalTitle1").plain() +
+                        "<br />" +
+                        "<select size='1' id='massEdit-menu' name='action'>" +
+                            "<option selected=''>" +
+                                $i18n.msg("modalTitle1").plain() +
+                            "</option>" +
+                            "<option value='prepend'>" +
+                                $i18n.msg("dropdownPrepend").plain() +
+                            "</option>" +
+                            "<option value='append'>" +
+                                $i18n.msg("dropdownAppend").plain() +
+                            "</option>" +
+                            "<option value='append'>" +
+                                $i18n.msg("dropdownDelete").plain() +
+                            "</option>" +
+                        "</select>" +
+                        "<br />" +
+                    "</p>" +
+                    "<br />" +
+                    "<p>" + $i18n.msg("modalTitle2").plain() +
+                        "<br />" +
+                        "<textarea id='massEdit-content-value' placeholder='" +
+                            $i18n.msg("modalTemplateplaceholder").plain() +
+                        "'/>" +
+                        "<br />" +
+                    "</p>" +
+                    "<br />" +
+                    "<p>" + $i18n.msg("modalTitle3").plain() +
+                        "<br />" +
+                        "<textarea id='massEdit-pages-value' placeholder='" +
+                            $i18n.msg("modalPagesplaceholder").plain() +
+                        "'/>" +
+                        "<br />" +
+                    "</p>" +
+                "</fieldset>" +
+                "<br />" +
+                "<hr>" +
+            "</form>" +
+            "<p>" + $i18n.msg("modalLog").plain() + "</p>" +
+            "<div id='massEdit-log'></div>";
+
+            var $toolbarElement = this.constructItem(
+                $i18n.msg("itemTitle").plain()
+            );
             var $desiredNode = this.returnNode();
- 
-            jQuery($toolbarElement).appendTo($desiredNode).click(function () {
-                that.displayModal();
+
+            jQuery($toolbarElement).prependTo($desiredNode).click(function () {
+                that.displayModal($modalHTML);
             });
         }
     };
- 
-    mw.loader.using("mediawiki.util").then(
-        jQuery.proxy(MassEdit.init, MassEdit)
-    );
+
+    mw.hook("dev.i18n").add(function ($i18n) {
+        jQuery.when(
+            $i18n.loadMessages("MassEdit"),
+            mw.loader.using("mediawiki.util")
+        ).done(jQuery.proxy(MassEdit.init, MassEdit));
+    });
 });
