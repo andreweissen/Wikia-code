@@ -2,149 +2,36 @@
  * PageCreator
  * @file Displays information related to page's creator
  * @author Eizen <dev.wikia.com/wiki/User_talk:Eizen>
- * @license Apache-2.0
  * @external "jQuery"
  * @external "mediawiki.util"
  * @external "mediawiki.api"
+ * @external "mw"
+ * @external "wikia.window"
  */
- 
+
 /*jslint browser, this:true */
-/*global mw, jQuery, window */
- 
-mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
+/*global mw, jQuery, window, wk */
+
+require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
     "use strict";
- 
-    var $conf = mw.config.get([
-        "skin",
-        "wgPageName",
-        "wgArticleId",
-        "wgUserLanguage",
-        "wgNamespaceNumber"
-    ]);
- 
-    if (jQuery("#page-creator").exists() || $conf.wgNamespaceNumber === -1) {
+
+    if (
+        window.isPageCreatorLoaded ||
+        jQuery("#page-creator").exists() ||
+        wk.wgNamespaceNumber === -1
+    ) {
         return;
     }
- 
-    // Remember to include the $1 and $2 placeholders
-    var $i18n = {
-        "be": {
-            main: "Створана удзельнікам $1",
-            on: "$2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "de": {
-            main: "Erstellt von $1",
-            on: "und $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "en": {
-            main: "Created by $1",
-            on: "on $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "es": {
-            main: "Creado por $1",
-            on: "y $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "fr": {
-            main: "Créé par $1",
-            on: "et $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "it": {
-            main: "Creata da $1",
-            on: "il giorno $2",
-            talk: "discussioni",
-            contribs: "contributi"
-        },
-        "hi": {
-            main: "$1 के द्वारा बनाई गई",
-            on: "$2 पर",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "kn": {
-            main: "ರಚಿಸಿದವರು $1",
-            on: "$2 ನಲ್ಲಿ",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "nl": {
-            main: "Aangemaakt door $1",
-            on: "op $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "pl": {
-            main: "Utworzone przez $1",
-            on: "dnia $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "pt": {
-            main: "Criada por $1",
-            on: "em $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "pt-br": {
-            main: "Criada por $1",
-            on: "em $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "ru": {
-            main: "Создано участником $1",
-            on: "$2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "sv": {
-            main: "Skapad av $1",
-            on: "på $2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "uk": {
-            main: "Створено користувачем $1",
-            on: "$2",
-            talk: "talk",
-            contribs: "contribs"
-        },
-        "zh": {
-            main: "由 $1 创建",
-            on: "于 $2",
-            talk: "讨论",
-            contribs: "贡献"
-        },
-        "zh-hant": {
-            main: "由 $1 創建",
-            on: "於 $2",
-            talk: "討論",
-            contribs: "貢獻"
-        }
-    };
- 
-    var $lang = jQuery.extend(
-        $i18n.en,
-        $i18n[$conf.wgUserLanguage.split("-")[0]],
-        $i18n[$conf.wgUserLanguage]
-    );
- 
-    var $api = new mw.Api();
- 
-    var $namespaces = window.pageCreatorNamespaces || [0, 4, 8, 10, 14];
-    var $useAvatar = window.pageCreatorAvatar || false;
-    var $useTimestamp = window.pageCreatorTimestamp || false;
-    var $useUTC = window.pageCreatorUTC || false;
- 
+    window.isPageCreatorLoaded = true;
+
+    if (!window.dev || !window.dev.i18n) {
+        wk.importArticle({
+            type: "script",
+            article: "u:dev:MediaWiki:I18n-js/code.js"
+        });
+    }
+    var $i18n;
+
     /**
      * @class PageCreator
      * @classdesc The central PageCreator class
@@ -153,16 +40,18 @@ mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
 
         /**
          * @method getData
+         * @description Method for querying API for data related to revisions.
+         *              Acquires timestamp, ids, and user-related info.
          * @param {function} callback
          * @returns {void}
          */
         getData: function (callback) {
             var that = this;
- 
-            $api.get({
+
+            this.api.get({
                 action: "query",
                 prop: "revisions",
-                titles: $conf.wgPageName,
+                titles: wk.wgPageName,
                 rvprop: "ids|timestamp|user|userid",
                 rvlimit: "1",
                 rvdir: "newer",
@@ -176,28 +65,31 @@ mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
 
         /**
          * @method handleData
-         * @param {object} that
-         * @param {json} $result
+         * @description Utility method for handling data provided from the
+         *              <code>getData</code> method. Assembles the HTML string,
+         *              handles user skin, and deals with user config options.
+         * @param {this} that
+         * @param {JSON} $result
          * @returns {void}
          */
         handleData: function (that, $result) {
-            var $data = $result.query.pages[$conf.wgArticleId].revisions[0];
-            var $revisionURL = $conf.wgPageName + "?oldid=" + $data.revid;
-            var $divElement = mw.html.element("div", {id: "page-creator"});
- 
+            var $data = $result.query.pages[wk.wgArticleId].revisions[0];
+            var $revisionURL = wk.wgPageName + "?oldid=" + $data.revid;
+            var $divElement = mw.html.element("div", { id: "page-creator" });
+
             var $userNameLink =
                     "<img id='pc-avatar'/><a href='/wiki/User:" +
                     $data.user + "'>" + $data.user + "</a> " +
                     "(<a href='/wiki/User_talk:" + $data.user + "'>" +
-                    $lang.talk + "</a> | <a href='/wiki/" +
+                    $i18n.msg("talk").plain() + "</a> | <a href='/wiki/" +
                     "Special:Contributions/" + $data.user + "'>" +
-                    $lang.contribs + "</a>)";
- 
-            //Placement of PC before LE if possible
+                    $i18n.msg("contribs").plain() + "</a>)";
+
+            // Placement of PC before LE if possible
             if (jQuery("#lastEdited").exists()) {
                 jQuery($divElement).insertBefore("#lastEdited");
             } else {
-                switch ($conf.skin) {
+                switch (wk.skin) {
                 case "oasis":
                 case "wikia":
                     jQuery($divElement)
@@ -210,34 +102,45 @@ mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
                     break;
                 }
             }
- 
-            if ($useAvatar === true && $data.userid !== 0) {
+
+            /**
+             * These two <code>if</code> blocks are hacky workarounds to account
+             * for the new config object implementation I've decided to pursue.
+             * Should work for old and new config methods.
+             */
+            if (
+                (window.pageCreatorAvatar || that.config.useAvatar) &&
+                $data.userid !== 0
+            ) {
                 that.getAvatar($data.user);
             }
- 
-            if ($useTimestamp === true) {
+
+            if (window.pageCreatorTimestamp || that.config.useTimestamp) {
                 that.handleTimestamps($data, $revisionURL, $userNameLink);
             } else {
                 jQuery("#page-creator")
-                    .html(
-                        $lang.main.replace(/\$1/g, $userNameLink)
-                    );
+                    .html($i18n.msg("main").plain()
+                        .replace(/\$1/g, $userNameLink));
             }
         },
 
         /**
          * @method handleTimestamps
-         * @param {json} $data
-         * @param {string} $rev
-         * @param {string} $link
+         * @description Handler method for the setting of timestamps, provided
+         *              the user has included a config option specifying the
+         *              addition of timestamps. Timestamps may be displayed in
+         *              either UTC or local.
+         * @param {JSON} $data
+         * @param {String} $rev
+         * @param {String} $link
          * @returns {void}
          */
         handleTimestamps: function ($data, $rev, $link) {
             var $time;
             var $formattedCreationDate;
             var $creationDateLink;
- 
-            if ($useUTC === true) {
+
+            if (window.pageCreatorUTC || this.config.useUTC) {
                 $time = new Date($data.timestamp).toUTCString();
                 $formattedCreationDate = $time.slice(0, 3) + ", " +
                         $time.slice(4, 16) + ", " + $time.slice(17, 25) +
@@ -248,20 +151,22 @@ mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
                         $time.slice(4, 15) + ", " + $time.slice(16, 24) +
                         " " + $time.slice(34);
             }
- 
+
             $creationDateLink = "<a href='/wiki/" + $rev + "'>" +
                     $formattedCreationDate + "</a>";
- 
+
             jQuery("#page-creator")
                 .html(
-                    $lang.main.replace(/\$1/g, $link) + " "
-                    + $lang.on.replace(/\$2/g, $creationDateLink)
+                    $i18n.msg("main").plain().replace(/\$1/g, $link) + " " +
+                    $i18n.msg("on").plain().replace(/\$2/g, $creationDateLink)
                 );
         },
 
         /**
          * @method getAvatar
-         * @param {string} $userName
+         * @description Method acquires the Nirvana data related to the avatar
+         *              of the page creator, changing its size.
+         * @param {String} $userName
          * @returns {void}
          */
         getAvatar: function ($userName) {
@@ -277,9 +182,27 @@ mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
 
         /**
          * @method init
+         * @description The main method of the script, this function sets config
+         *              options and invokes the <code>getData</code> method if
+         *              the viewed page is in the list of approved namespaces.
+         * @param {JSON} $lang
          * @returns {void}
          */
-        init: function () {
+        init: function ($lang) {
+            $lang.useUserLang();
+            $i18n = $lang;
+
+            this.api = new mw.Api();
+            this.config = jQuery.extend(
+                {
+                    namespaces: [0, 4, 8, 10, 14],
+                    useAvatar: false,
+                    useTimestamp: false,
+                    useUTC: false
+                },
+                window.pageCreatorConfig
+            );
+
             mw.util.addCSS(
                 "#page-creator {" +
                     "line-height: normal;" +
@@ -287,12 +210,21 @@ mw.loader.using(["mediawiki.util", "mediawiki.api"], function () {
                     "font-weight: normal;" +
                 "}"
             );
- 
-            if (jQuery.inArray($conf.wgNamespaceNumber, $namespaces) !== -1) {
+
+            // One of a number of hacky patches accounting for the old config
+            var $namespaces = window.pageCreatorNamespaces ||
+                this.config.namespaces;
+
+            if (jQuery.inArray(wk.wgNamespaceNumber, $namespaces) !== -1) {
                 this.getData(this.handleData);
             }
         }
     };
- 
-    PageCreator.init();
+
+    mw.hook("dev.i18n").add(function ($i18n) {
+        jQuery.when(
+            $i18n.loadMessages("PageCreator"),
+            mw.loader.using(["mediawiki.util", "mediawiki.api"])
+        ).done(jQuery.proxy(PageCreator.init, PageCreator));
+    });
 });
