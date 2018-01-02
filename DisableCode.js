@@ -160,7 +160,8 @@ require(["mw", "wikia.window", "jquery"], function (mw, wk, jQuery) {
                 })
             ));
 
-            jQuery(".toolbar .tools").prepend($container).click(function () {
+            jQuery(".toolbar .tools").prepend($container);
+            jQuery("#disableCode-a").click(function () {
                 jQuery("#disableCode-menu").slideToggle("fast");
             });
 
