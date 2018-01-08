@@ -1,11 +1,12 @@
 /**
  * MassEdit/code.js
- * @file Allows for addition/deletion of content from pages
+ * @file Allows for addition/deletion/replacement of content from pages
  * @author Eizen <dev.wikia.com/wiki/User_talk:Eizen>
  * @external "mediawiki.util"
  * @external "jQuery"
  * @external "wikia.ui.factory"
  * @external "wikia.window"
+ * @external "I18n-js"
  * @external "mw"
  */
 
@@ -34,7 +35,12 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
      * @classdesc The central MassEdit class
      */
     var MassEdit = {
-        hasRights: /(bureaucrat|sysop|content-moderator|bot)/
+        meta: {
+            author: "User:Eizen",
+            created: "06/01/18",
+            version: "1.0"
+        },
+        hasRights: /(sysop|content-moderator|bot)/
             .test(wk.wgUserGroups.join(" ")),
         legalChars: new RegExp("^[" + wk.wgLegalTitleChars + "]*$"),
 
@@ -74,7 +80,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @description Method returns a completed <code>String</code>
          *              representing the menu link item. Is comprised of a
          *              link inside a list item.
-         * @param {string} $text - Text to be displayed in the item and title
+         * @param {String} $text - Text to be displayed in the item and title
          * @returns {String}
          */
         constructItem: function ($text) {
@@ -95,13 +101,13 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @description Utility function used to test if inputted page name
          *              matches the legal characters regex. Returns a boolean
          *              flag depending on result.
-         * @param {string} $page - Inputter page name
+         * @param {String} $page - Inputted page name
          * @returns {boolean}
          */
         isLegalPage: function ($page) {
             if(!this.legalChars.test($page)) {
                 jQuery("#massEdit-modal-form")[0].reset();
-                this.addLogEntry("modalError");
+                this.addLogEntry("modalSecurity");
                 return false;
             } else {
                 return true;
@@ -123,21 +129,20 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                 "#massEdit-menu { " +
                     "width: 100%;" +
                 "}" +
-                "#massEdit-content-value," +
-                "#massEdit-pages-value {" +
-                    "height: 100px;" +
+                ".massEdit-textarea {" +
+                    "height: 65px;" +
                     "width: 100%;" +
                     "padding: 0;" +
-                    "overflow: scroll;" +
+                    "overflow: auto;" +
                 "}" +
                 "#massEdit-log {" +
-                    "height: 100px;" +
+                    "height: 60px;" +
                     "width: 98%;" +
                     "border: 1px solid;" +
                     "font-family: monospace;" +
                     "background: #fff;" +
                     "color: #aeaeae;" +
-                    "overflow: scroll;" +
+                    "overflow: auto;" +
                     "padding:5px;" +
                 "}"
             );
@@ -196,61 +201,117 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                     massEditModal.show();
                 });
             });
+
+            // Disable replacements menu depending on current selected option
+            jQuery(document).on("change", "#massEdit-menu", function () {
+                if (jQuery("#massEdit-menu").val() === "replace") {
+                    jQuery("#massEdit-replaceThis-value")
+                        .prop("disabled", false);
+                } else {
+                    jQuery("#massEdit-replaceThis-value")
+                        .prop("disabled", true);
+                }
+            });
         },
 
         /**
-         * @method handleWikitext
-         * @description Callback function for <code>getWikitext</code>. Sifts
+         * @method getContent
+         * @description This method retrieves the content of the inputted page,
+         *              including information about its time of creation and
+         *              relevant timestamp info. Used exclusively by the find
+         *              and dropdown option.
+         * @param {String} $action - Editing action (prepend, append, replace)
+         * @param {String} $page - The page in question
+         * @param {String} $newContent - New text to replace the target
+         * @param {String} $replace - The target to be replaced in the callback
+         * @param {function} callback - The callback handler
+         */
+        getContent: function ($action, $page, $newContent, $replace, callback) {
+            var that = this;
+            this.api.get({
+                action: "query",
+                prop: "info|revisions",
+                intoken: "edit",
+                titles: $page,
+                rvprop: "content|timestamp",
+                rvlimit: "1",
+                indexpageids: "true",
+                format : "json"
+            }).done(function ($data) {
+                if (!$data.error) {
+                    callback(           // handleContent()
+                        that,           // this
+                        $action,        // "replace"
+                        $data,          // $data
+                        $page,          // $pagesArray[$counter]
+                        $newContent,    // "#massEdit-content-value"
+                        $replace        // "#massEdit-replaceThis-value"
+                    );
+                }
+            });
+        },
+
+        /**
+         * @method handleContent
+         * @description Callback function for <code>getContent</code>. Sifts
          *              through included data and passes relevant bits to the
          *              <code>editPage</code> method. Used exclusively by the
-         *              "Delete Content" dropdown option.
-         * @param {json} $data - Passed data from <code>getWikitext</code>
+         *              find and replace dropdown option.
+         * @param {this} that - Scope variable
+         * @param {String} $action - Editing action (prepend, append, replace)
+         * @param {JSON} $data - Passed data from <code>getContent</code>
          * @param {String} $page - Specific page in question
-         * @param {String} $replace - Text to be replaced by an empty String
+         * @param {String} $newContent - New text to replace the target
+         * @param {String} $replaceThis - Text to be replaced by $newContent
          * @returns {void}
          */
-        handleWikitext: function ($data, $page, $replace) {
+        handleContent: function (
+            that,
+            $action,
+            $data,
+            $page,
+            $newContent,
+            $replaceThis
+        ) {
+            // Check if page actually exists
+            if (Object.keys($data.query.pages)[0] === "-1") {
+                jQuery("#massEdit-modal-form")[0].reset();
+                jQuery("#massEdit-log").prepend(
+                    $i18n.msg("noSuchPage").plain().replace("$1", $page) +
+                    "<br />"
+                );
+                return;
+            }
+
+            var $newText;
             var $result = $data.query.pages[Object.keys($data.query.pages)[0]];
             var $text = $result.revisions[0]["*"];
             var $timestamp = $result.revisions[0].timestamp;
             var $starttimestamp = $result.starttimestamp;
             var $token = $result.edittoken;
 
-            $text = $text.replace(new RegExp($replace, "g"), "");
+            // Replace all instances of chosen text with inputted new text
+            $newText = $text.split($replaceThis).join($newContent);
 
-            MassEdit.editPage($page, $text, "delete", $timestamp,
-                $starttimestamp, $token);
-        },
-
-        /**
-         * @method getWikitext
-         * @description This method retrieves the content of the inputted page,
-         *              including information about its time of creation and
-         *              relevant timestamp info. Used exclusively by the "Delete
-         *              Content" dropdown option
-         * @param {string} $page - The page in question
-         * @param {string} $replace - The text to be replaced in the callback
-         * @param {function} callback - The callback handler
-         */
-        getWikitext: function ($page, $replace, callback) {
-            jQuery.ajax({
-                type: "GET",
-                url: mw.util.wikiScript("api"),
-                data: {
-                    action: "query",
-                    prop: "info|revisions",
-                    intoken: "edit",
-                    titles: $page,
-                    rvprop: "content|timestamp",
-                    rvlimit: "1",
-                    indexpageids: "true",
-                    format : "json"
-                }
-            }).done(function ($data) {
-                if (!$data.error) {
-                    callback($data, $page, $replace);
-                }
-            });
+            // Check if old & new revisions are identical in content
+            if ($newText === $text) {
+                jQuery("#massEdit-log").prepend(
+                    $i18n.msg("noMatch").plain()
+                        .replace("$1", $replaceThis)
+                        .replace("$2", $page) +
+                    "<br />"
+                );
+            } else {
+                that.editPage(
+                    that,
+                    $page,
+                    $newText,
+                    $action,
+                    $timestamp,
+                    $starttimestamp,
+                    $token
+                );
+            }
         },
 
         /**
@@ -259,16 +320,24 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          *              three main MassEdit functions. Takes several different
          *              numbers of input parameters depending on the action to
          *              be taken by the handler.
-         * @param {string} $page - The page to be edited
-         * @param {string} $content - The content to be added to the page
-         * @param {string} $action - Editing action (prepend, append, delete)
-         * @param {string} $timestamp - Optional, for delete option only
-         * @param {string} $starttimestamp - Optional, for delete option only
-         * @param {string} $token - Optional, for delete option only
+         * @param {this} that - Scope variable
+         * @param {String} $page - The page to be edited
+         * @param {String} $content - The content to be added to the page
+         * @param {String} $action - Editing action (prepend, append, replace)
+         * @param {String} $timestamp - Optional, for replace option only
+         * @param {String} $starttimestamp - Optional, for replace option only
+         * @param {String} $token - Optional, for replace option only
          * @returns {void}
          */
-        editPage: function ($page, $content, $action, $timestamp,
-                $starttimestamp, $token) {
+        editPage: function (
+            that,
+            $page,
+            $content,
+            $action,
+            $timestamp,
+            $starttimestamp,
+            $token
+        ) {
 
             // Default base properties
             var $params = {
@@ -289,7 +358,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                 $params.appendtext = $content;
                 $params.token = mw.user.tokens.get("editToken");
                 break;
-            case "delete":
+            case "replace":
                 $params.text = $content;
                 $params.basetimestamp = $timestamp;
                 $params.startimestamp = $starttimestamp;
@@ -297,22 +366,19 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                 break;
             }
 
-            jQuery.ajax({
-                type: "POST",
-                url: mw.util.wikiScript("api"),
-                data: $params
-            }).success(function ($data) {
+            that.api.post($params).done(function ($data) {
                 jQuery("#massEdit-modal-form")[0].reset();
-                jQuery("#massEdit-log").prepend(
-                    $i18n.msg("editSuccess").plain().replace("$1", $page) +
-                    "<br/>"
-                );
-            }).fail(function ($data) {
-                jQuery("#massEdit-modal-form")[0].reset();
-                jQuery("#massEdit-log").prepend(
-                    $i18n.msg("editFailure").plain().replace("$1", $page) +
-                    "<br/>"
-                );
+                if (!$data.error) {
+                    jQuery("#massEdit-log").prepend(
+                        $i18n.msg("editSuccess").plain().replace("$1", $page) +
+                        "<br />"
+                    );
+                } else {
+                    jQuery("#massEdit-log").prepend(
+                        $i18n.msg("editFailure").plain().replace("$1", $page) +
+                        "<br />"
+                    );
+                }
             });
         },
 
@@ -326,64 +392,89 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          *              is employed to ensure that the script does not make too
          *              many consecutive content GETs or edit POSTs; replaces
          *              <code>forEach</code> implementation.
+         *              <br />
+         *              <br />
+         *              Addition of global pages-based find-and-replace option
+         *              replaces old find-and-delete option, and now checks for
+         *              cases of empty pages or empty target text.
          * @returns {void}
          */
         main: function () {
+            var that = this;
+
+            // Values of textareas
+            var $newContent = jQuery("#massEdit-content-value")[0].value;
+            var $toReplace = jQuery("#massEdit-replaceThis-value")[0].value;
+            var $pagesInput = jQuery("#massEdit-pages-value")[0].value;
+            var $pagesArray = $pagesInput.split(/[\n]+/);
+
+            // Dropdown menu
+            var $index = jQuery("#massEdit-menu")[0].selectedIndex;
+            var $action = jQuery("#massEdit-menu").val();
+
+            // Interval fields
+            var $counter = 0;
+            var $editInterval;
+
+            // Is not in the proper rights group
             if (!this.hasRights) {
                 jQuery("#massEdit-modal-form")[0].reset();
                 this.addLogEntry("modalUserRights");
                 return;
+            // No pages included
+            } else if (!$pagesInput) {
+                jQuery("#massEdit-modal-form")[0].reset();
+                this.addLogEntry("noPages");
+                return;
+            // Is either append/prepend with no content input included
+            } else if ($action !== "replace" && !$newContent) {
+                jQuery("#massEdit-modal-form")[0].reset();
+                this.addLogEntry("noContent");
+                return;
+            // Is find-and-replace with no target content included
+            } else if ($action === "replace" && !$toReplace) {
+                jQuery("#massEdit-modal-form")[0].reset();
+                this.addLogEntry("noTarget");
+                return;
             } else {
-                var that = this;
-
-                // User input
-                var $index = jQuery("#massEdit-menu")[0].selectedIndex;
-                var $input = jQuery("#massEdit-content-value")[0].value;
-                var $pages = jQuery("#massEdit-pages-value")[0]
-                        .value.split(/[\n]+/);
-
-                // Fields used for setInterval iterations below
-                var $counter = 0;
-                var $editInterval;
-
                 switch ($index) {
                 case 0: // No action selected
                     this.addLogEntry("noOptionSelected");
                     break;
                 case 1:
                 case 2: // Edit methods (prepend and append)
-                    var $action;
                     this.addLogEntry("loading");
 
-                    if ($index === 1) {
-                        $action = "prepend";
-                    } else {
-                        $action = "append";
-                    }
-
                     $editInterval = setInterval(function () {
-                        if (that.isLegalPage($pages[$counter])) {
-                            that.editPage($pages[$counter], $input, $action);
+                        if (that.isLegalPage($pagesArray[$counter])) {
+                            that.editPage(
+                                that,
+                                $pagesArray[$counter],
+                                $newContent,
+                                $action
+                            );
                         }
                         $counter++;
-                        if ($counter === $pages.length) {
+                        if ($counter === $pagesArray.length) {
                             clearInterval($editInterval);
                         }
                     }, that.config.editInterval);
                     break;
-                case 3: // Find and delete
+                case 3: // Find and replace
                     this.addLogEntry("loading");
 
                     $editInterval = setInterval(function () {
-                        if (that.isLegalPage($pages[$counter])) {
-                            that.getWikitext(
-                                $pages[$counter],
-                                $input,
-                                that.handleWikitext
+                        if (that.isLegalPage($pagesArray[$counter])) {
+                            that.getContent(
+                                $action,
+                                $pagesArray[$counter],
+                                $newContent,
+                                $toReplace,
+                                that.handleContent
                             );
                         }
                         $counter++;
-                        if ($counter === $pages.length) {
+                        if ($counter === $pagesArray.length) {
                             clearInterval($editInterval);
                         }
                     }, that.config.editInterval);
@@ -395,7 +486,9 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
         /**
          * @method init
          * @description Method initializes the program, assembling the toolbar
-                        link and handling click events.
+         *              link and handling click events. Config options are set
+         *              per user input or the defaults.
+         * @param {JSON} $lang - I18n-js content
          * @returns {void}
          */
         init: function ($lang) {
@@ -404,9 +497,10 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             $lang.useUserLang();
             $i18n = $lang;
 
+            this.api = new mw.Api();
             this.config = jQuery.extend(
                 {
-                    editInterval: 500,
+                    editInterval: 750,
                     editSummary: $i18n.msg("meEditSummary").plain() +
                         " ([[w:c:dev:MassEdit|" +
                         $i18n.msg("meScript").plain() + "]])"
@@ -417,11 +511,11 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             var $modalHTML =
             "<form id='massEdit-modal-form' class='WikiaForm '>" +
                 "<fieldset>" +
-                    "<p>" + $i18n.msg("modalTitle1").plain() +
+                    "<p>" + $i18n.msg("modalSelect").plain() +
                         "<br />" +
                         "<select size='1' id='massEdit-menu' name='action'>" +
                             "<option selected=''>" +
-                                $i18n.msg("modalTitle1").plain() +
+                                $i18n.msg("modalSelect").plain() +
                             "</option>" +
                             "<option value='prepend'>" +
                                 $i18n.msg("dropdownPrepend").plain() +
@@ -429,25 +523,36 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                             "<option value='append'>" +
                                 $i18n.msg("dropdownAppend").plain() +
                             "</option>" +
-                            "<option value='append'>" +
-                                $i18n.msg("dropdownDelete").plain() +
+                            "<option value='replace'>" +
+                                $i18n.msg("dropdownReplace").plain() +
                             "</option>" +
                         "</select>" +
                         "<br />" +
                     "</p>" +
                     "<br />" +
-                    "<p>" + $i18n.msg("modalTitle2").plain() +
+                    "<p>" + $i18n.msg("modalContentTitle").plain() +
                         "<br />" +
-                        "<textarea id='massEdit-content-value' placeholder='" +
-                            $i18n.msg("modalTemplateplaceholder").plain() +
+                        "<textarea id='massEdit-content-value' " +
+                            "class='massEdit-textarea' placeholder='" +
+                            $i18n.msg("modalContentPlaceholder").plain() +
                         "'/>" +
                         "<br />" +
                     "</p>" +
                     "<br />" +
-                    "<p>" + $i18n.msg("modalTitle3").plain() +
+                    "<p>" + $i18n.msg("modalReplaceTitle").plain() +
                         "<br />" +
-                        "<textarea id='massEdit-pages-value' placeholder='" +
-                            $i18n.msg("modalPagesplaceholder").plain() +
+                        "<textarea id='massEdit-replaceThis-value' " +
+                            "class='massEdit-textarea' placeholder='" +
+                            $i18n.msg("modalReplacePlaceholder").plain() +
+                        "' disabled/>" +
+                        "<br />" +
+                    "</p>" +
+                    "<br />" +
+                    "<p>" + $i18n.msg("modalPagesTitle").plain() +
+                        "<br />" +
+                        "<textarea id='massEdit-pages-value' " +
+                            "class='massEdit-textarea' placeholder='" +
+                            $i18n.msg("modalPagesPlaceholder").plain() +
                         "'/>" +
                         "<br />" +
                     "</p>" +
@@ -472,7 +577,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
     mw.hook("dev.i18n").add(function ($i18n) {
         jQuery.when(
             $i18n.loadMessages("MassEdit"),
-            mw.loader.using("mediawiki.util")
+            mw.loader.using(["mediawiki.util", "mediawiki.api"])
         ).done(jQuery.proxy(MassEdit.init, MassEdit));
     });
 });
