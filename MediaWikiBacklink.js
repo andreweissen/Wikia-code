@@ -14,7 +14,10 @@
 require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
     "use strict";
 
-    if (wk.wgNamespaceNumber !== 8 || window.isMWBacklinkLoaded) {
+    if (
+        jQuery.inArray(wk.wgNamespaceNumber, [8, 828]) === -1 ||
+        window.isMWBacklinkLoaded
+    ) {
         return;
     }
     window.isMWBacklinkLoaded = true;
@@ -74,8 +77,20 @@ require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
                         "' title='" + $link.title + "'>" + $link.title + "</a>";
 
                     if (wk.skin === "oasis") {
-                        $html = $html + " | ";
                         $target = "#PageHeader .page-header__page-subtitle";
+
+                        if (
+                            wk.wgNamespaceNumber === 828 &&
+                            !jQuery($target).exists()
+                        ) {
+                            jQuery("#PageHeader .page-header__main").append(
+                                mw.html.element("div", {
+                                    class: "page-header__page-subtitle"
+                                })
+                            );
+                        } else {
+                            $html = $html + " | ";
+                        }
                     } else {
                         $target = "#bodyContent";
                     }
@@ -99,7 +114,11 @@ require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
          */
         init: function () {
             this.api = new mw.Api();
-            this.redacted = wk.wgPageName.split(/:(.+)/)[1].split(/[\/.]+/)[0];
+            this.redacted =
+                (wk.wgNamespaceNumber === 828
+                    ? "Global Lua Modules/"
+                    : "") +
+                wk.wgPageName.split(/:(.+)/)[1].split(/[\/.]+/)[0];
             this.getData(this.handleData);
         }
     };
