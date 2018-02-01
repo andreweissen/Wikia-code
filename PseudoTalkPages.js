@@ -37,6 +37,7 @@ require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
             "pt-br": "Página de Discussão",
             "ru": "Страница обсуждения",
             "uk": "Сторінка обговорення",
+            "ja": "このページについて話し合う",
             "zh": "談話頁",
             "es": "Página de discusión"
         },
