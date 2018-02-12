@@ -7,18 +7,18 @@
  * @external "wikia.window"
  * @external "mw"
  */
- 
+
 /*jslint browser, this:true */
 /*global mw, jQuery, window, require, wk */
- 
+
 require(["mw", "wikia.window"], function (mw, wk) {
     "use strict";
- 
+
     if (window.isCodeQuickLinksLoaded) {
         return;
     }
     window.isCodeQuickLinksLoaded = true;
- 
+
     var $i18n = {
         "en": { // English
             title: "Code Quick Links",
@@ -29,6 +29,11 @@ require(["mw", "wikia.window"], function (mw, wk) {
             title: "Код хуткіх спасылак",
             local: "Старонкі MediaWiki",
             personal: "Асабістыя старонкі"
+        },
+        "ja": { // Japanese
+            title: "コードクイックリンク",
+            local: "MediaWiki ファイル",
+            personal: "個人用 ファイル"
         },
         "pl": { // Polish
             title: "Szybkie linki kodów",
@@ -51,20 +56,25 @@ require(["mw", "wikia.window"], function (mw, wk) {
             personal: "Personliga Filer"
         },
         "uk": { // Ukrainian
-            title: "Код шpersonalвидких посилань",
+            title: "Код швидких посилань",
             local: "Сторінки MediaWiki",
             personal: "Особисті сторінки"
+        },
+        "es": { // Español
+            title: "Enlaces rápidos de código",
+            local: "Archivos MediaWiki",
+            personal: "Аrchivos personales"
         }
     };
- 
+
     var $lang = jQuery.extend(
         $i18n.en,
         $i18n[wk.wgUserLanguage.split("-")[0]],
         $i18n[wk.wgUserLanguage]
     );
- 
+
     var CodeQuickLinks = {
- 
+
         /**
          * @method assemblePageNames
          * @description The beating heart of the program, this method returns an
@@ -79,7 +89,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 siteFiles: [],
                 userFiles: []
             };
- 
+
             // Yep, this really happened
             jQuery.each($fileNames, function ($key, $value) {
                 if ($key === "standard") {
@@ -133,17 +143,17 @@ require(["mw", "wikia.window"], function (mw, wk) {
                     });
                 }
             });
- 
+
             // Alphabetically sorting the array names
             jQuery.each($files, function ($key, $value) {
                 $value.sort(function ($a, $b) {
                     return $a.name.localeCompare($b.name);
                 });
             });
- 
+
             return $files;
         },
- 
+
         /**
          * @method returnNode
          * @description Returns the proper node to which the rail module or
@@ -164,7 +174,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 return "#column-one";
             }
         },
- 
+
         /**
          * @method constructListElement
          * @description Method constructs an individual list element to be
@@ -184,7 +194,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 }, $text)
             ));
         },
- 
+
         /**
          * @method constructSubSection
          * @description This method accepts a fair few parameters so as to
@@ -220,7 +230,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 ))
             ));
         },
- 
+
         /**
          * @method constructRailModule
          * @description Assembles a rail module for use in the Oasis skin. Is
@@ -239,7 +249,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 })
             ));
         },
- 
+
         /**
          * @method injectOasisCSS
          * @description Based on the previous incarnation of the script, this
@@ -281,7 +291,7 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 "}"
             );
         },
- 
+
         /**
          * @method main
          * @description Method coordinates the central action of the script,
@@ -305,15 +315,15 @@ require(["mw", "wikia.window"], function (mw, wk) {
             };
             var $location = this.returnNode();
             var $assembledFiles = this.assemblePageNames($fileNames);
- 
+
             if (this.skinFamily === "oasis") {
                 var $railModule = this.constructRailModule($lang.title);
                 jQuery($location).prepend($railModule);
- 
+
                 this.injectOasisCSS();
                 $location = "#cql-module-content";
             }
- 
+
             // Pretty sure a bit of my soul died here
             jQuery.each($assembledFiles, function ($key, $value) {
                 var $column = that.constructSubSection(
@@ -334,19 +344,19 @@ require(["mw", "wikia.window"], function (mw, wk) {
                 );
                 jQuery($location).prepend($column);
             });
- 
+
             // More nested loops
             jQuery.each($assembledFiles, function ($key, $value) {
                 $value.forEach(function ($file) {
                     var $item =
                         that.constructListElement($file.name, $file.href);
- 
+
                     jQuery("#cql-module-" + $key + "-inner ul").append($item);
                 });
             });
         }
     };
- 
+
     mw.loader.using("mediawiki.util").then(
         jQuery.proxy(CodeQuickLinks.main, CodeQuickLinks)
     );
