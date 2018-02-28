@@ -10,7 +10,7 @@
 
 /*jslint browser, this:true */
 /*global mw, jQuery, window, require, wk */
-
+ 
 require(["mw", "wikia.window"], function (mw, wk) {
     "use strict";
 
@@ -19,59 +19,13 @@ require(["mw", "wikia.window"], function (mw, wk) {
     }
     window.isCodeQuickLinksLoaded = true;
 
-    var $i18n = {
-        "en": { // English
-            title: "Code Quick Links",
-            local: "MediaWiki Files",
-            personal: "Personal Files"
-        },
-        "be": { // Belarusian
-            title: "Код хуткіх спасылак",
-            local: "Старонкі MediaWiki",
-            personal: "Асабістыя старонкі"
-        },
-        "ja": { // Japanese
-            title: "コードクイックリンク",
-            local: "MediaWiki ファイル",
-            personal: "個人用 ファイル"
-        },
-        "pl": { // Polish
-            title: "Szybkie linki kodów",
-            local: "Pliki MediaWiki",
-            personal: "Pliki osobiste"
-        },
-        "pt-br": { // Brazilian Portuguese
-            title: "Links rápidos de código",
-            local: "Arquivos MediaWiki",
-            personal: "Arquivos pessoais"
-        },
-        "ru": { // Russian
-            title: "Код быстрых ссылок",
-            local: "Страницы MediaWiki",
-            personal: "Личные страницы"
-        },
-        "sv": { // Swedish
-            title: "Källkod Snabba Hyperlänkar",
-            local: "MediaWiki Filer",
-            personal: "Personliga Filer"
-        },
-        "uk": { // Ukrainian
-            title: "Код швидких посилань",
-            local: "Сторінки MediaWiki",
-            personal: "Особисті сторінки"
-        },
-        "es": { // Español
-            title: "Enlaces rápidos de código",
-            local: "Archivos MediaWiki",
-            personal: "Аrchivos personales"
-        }
-    };
-
-    var $lang = jQuery.extend(
-        $i18n.en,
-        $i18n[wk.wgUserLanguage.split("-")[0]],
-        $i18n[wk.wgUserLanguage]
-    );
+    if (!window.dev || !window.dev.i18n) {
+        wk.importArticle({
+            type: "script",
+            article: "u:dev:MediaWiki:I18n-js/code.js"
+        });
+    }
+    var $i18n;
 
     var CodeQuickLinks = {
 
@@ -296,10 +250,15 @@ require(["mw", "wikia.window"], function (mw, wk) {
          * @method main
          * @description Method coordinates the central action of the script,
          *              assembling various elements based on skin and such.
+         * @param {JSON} $lang
          * @returns {void}
          */
-        main: function () {
+        main: function ($lang) {
             var that = this;
+
+            $lang.useUserLang();
+            $i18n = $lang;
+
             var $fileNames = {
                 standard: [
                     "Chat",
@@ -317,7 +276,8 @@ require(["mw", "wikia.window"], function (mw, wk) {
             var $assembledFiles = this.assemblePageNames($fileNames);
 
             if (this.skinFamily === "oasis") {
-                var $railModule = this.constructRailModule($lang.title);
+                var $railModule = this.constructRailModule(
+                    $i18n.msg("title").plain());
                 jQuery($location).prepend($railModule);
 
                 this.injectOasisCSS();
@@ -335,8 +295,8 @@ require(["mw", "wikia.window"], function (mw, wk) {
                         ? "h4"
                         : "h5",
                     ($key === "userFiles")
-                        ? $lang.personal
-                        : $lang.local,
+                        ? $i18n.msg("personal").plain()
+                        : $i18n.msg("local").plain(),
                     (that.skinFamily === "oasis")
                         ? "cql-module-innerDiv"
                         : "pBody",
@@ -357,7 +317,10 @@ require(["mw", "wikia.window"], function (mw, wk) {
         }
     };
 
-    mw.loader.using("mediawiki.util").then(
-        jQuery.proxy(CodeQuickLinks.main, CodeQuickLinks)
-    );
+    mw.hook("dev.i18n").add(function ($i18n) {
+        jQuery.when(
+            $i18n.loadMessages("CodeQuickLinks"),
+            mw.loader.using("mediawiki.util")
+        ).done(jQuery.proxy(CodeQuickLinks.main, CodeQuickLinks));
+    });
 });
