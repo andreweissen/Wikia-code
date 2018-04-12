@@ -579,8 +579,10 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             }
 
             // In any case, handle user's chosen actions
-            that.actionHandler($pagesArray, $newContent, $toReplace,
-                $actionIndex, $action);
+            if ($pagesArray.length) {
+                that.actionHandler($pagesArray, $newContent, $toReplace,
+                    $actionIndex, $action);
+            }
         },
 
         /**
