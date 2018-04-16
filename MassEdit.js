@@ -38,8 +38,8 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
         meta: {
             author: "User:Eizen",
             created: "05/02/17",
-            lastEdit: "12/04/18",
-            version: "2.2"
+            lastEdit: "16/04/18",
+            version: "2.2.1"
         },
         hasRights: /(sysop|content-moderator|bot)/
             .test(wk.wgUserGroups.join(" ")),
@@ -280,14 +280,9 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @param {String} $replaceThis - Text to be replaced by $newContent
          * @returns {void}
          */
-        handleContent: function (
-            that,
-            $action,
-            $data,
-            $page,
-            $newContent,
-            $replaceThis
-        ) {
+        handleContent: function (that, $action, $data, $page, $newContent,
+                $replaceThis) {
+
             // Check if page actually exists
             if (Object.keys($data.query.pages)[0] === "-1") {
                 jQuery("#massEdit-modal-form")[0].reset();
@@ -314,15 +309,8 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                     "<br />"
                 );
             } else {
-                that.editPage(
-                    that,
-                    $page,
-                    $newText,
-                    $action,
-                    $timestamp,
-                    $starttimestamp,
-                    $token
-                );
+                that.editPage(that, $page, $newText, $action, $timestamp,
+                    $starttimestamp, $token);
             }
         },
 
@@ -341,15 +329,8 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @param {String} $token - Optional, for replace option only
          * @returns {void}
          */
-        editPage: function (
-            that,
-            $page,
-            $content,
-            $action,
-            $timestamp,
-            $starttimestamp,
-            $token
-        ) {
+        editPage: function (that, $page, $content, $action, $timestamp,
+                $starttimestamp, $token) {
 
             // Default base properties
             var $params = {
@@ -406,8 +387,80 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                     cmtitle: $category,
                     cmprop: "title",
                     cmdir: "desc",
-                    cmlimit: 100,
+                    cmlimit: 500,
                     format: "json"
+                }
+            });
+        },
+
+        /**
+         * @method categoryHandler
+         * @description The code for the handling of category pages was
+         *              initially stored in <tt>MassEdit.main</tt>, but was
+         *              moved to a separate method for elegance's sake and for
+         *              ease of readability. A few modifications were made to
+         *              ensure all API requests were made prior to any handling
+         *              within the body of the <tt>done</tt> function.
+         * @param {String[]} $inputArray
+         * @param {String} $newContent
+         * @param {String} $toReplace
+         * @param {int} $actionIndex
+         * @param {String} $action
+         * @returns {void}
+         */
+        categoryHandler: function($inputArray, $newContent, $toReplace,
+                            $actionIndex, $action) {
+
+            var that = this;
+            var $categories;
+            var $requests;
+            var $defer;
+            var $data;
+
+            $categories = [];
+            $requests = [];
+
+            $inputArray.forEach(function ($category) {
+                if (!$category.startsWith("Category:")) {
+                    $category = "Category:" + $category;
+                }
+
+                if (that.isLegalPage($category)) {
+                    $categories.push($category);
+                    $requests.push(that.getCategoryMembers($category));
+                }
+            });
+
+            if (
+                !$categories.length ||
+                !$requests.length ||
+                $categories.length !== $requests.length
+            ) {
+                return;
+            }
+
+            $inputArray = [];
+            $defer = jQuery.when.apply(jQuery, $requests);
+
+            $defer.done(function () {
+                jQuery.each(arguments, function ($index, $results) {
+                    if ($results[1] === "success") {
+                        $data = $results[0].query.categorymembers;
+
+                        if ($data === undefined || $data.length === 0) {
+                            that.addLogEntry("noSuchPage", $categories[$index]);
+                            return;
+                        }
+
+                        $data.forEach(function ($page) {
+                            $inputArray.push($page.title);
+                        });
+                    }
+                });
+
+                if ($inputArray.length) {
+                    that.actionHandler($inputArray, $newContent, $toReplace,
+                        $actionIndex, $action);
                 }
             });
         },
@@ -469,14 +522,10 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
 
                 $editInterval = setInterval(function () {
                     if (that.isLegalPage($inputArray[$counter])) {
-                        that.getContent(
-                            $action,
-                            $inputArray[$counter],
-                            $newContent,
-                            $toReplace,
-                            that.handleContent
-                        );
+                        that.getContent($action, $inputArray[$counter],
+                            $newContent, $toReplace, that.handleContent);
                     }
+
                     $counter++;
                     if ($counter === $inputArray.length) {
                         clearInterval($editInterval);
@@ -519,10 +568,6 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             var $action = jQuery("#massEdit-actionType").val();
             var $typeIndex = jQuery("#massEdit-contentType")[0].selectedIndex;
 
-            // Assorted fields
-            var $catMembers = [];
-            var $data;
-
             // Is not in the proper rights group
             if (!this.hasRights) {
                 jQuery("#massEdit-modal-form")[0].reset();
@@ -554,32 +599,11 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
 
             // If user is inputting categories instead of loose pages
             } else if ($typeIndex === 2) {
-                $pagesArray.forEach(function ($category) {
-                    if (!$category.startsWith("Category:")) {
-                        $category = "Category:" + $category;
-                    }
+                that.categoryHandler($pagesArray, $newContent, $toReplace,
+                    $actionIndex, $action);
 
-                    if (that.isLegalPage($category)) {
-                        jQuery.when(
-                            that.getCategoryMembers($category)
-                        ).then(function ($results) {
-                            $data = $results.query.categorymembers;
-                            if ($data === undefined || $data.length === 0) {
-                                that.addLogEntry("noSuchPage", $category);
-                                return;
-                            }
-
-                            $data.forEach(function ($page) {
-                                $catMembers.push($page.title);
-                            });
-                        })
-                    }
-                });
-                $pagesArray = $catMembers;
-            }
-
-            // In any case, handle user's chosen actions
-            if ($pagesArray.length) {
+            // Otherwise (loose pages, etc.)
+            } else {
                 that.actionHandler($pagesArray, $newContent, $toReplace,
                     $actionIndex, $action);
             }
@@ -641,10 +665,10 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                             "<option selected=''>" +
                                 $i18n.msg("modalContentType").plain() +
                             "</option>" +
-                            "<option value='prepend'>" +
+                            "<option value='pages'>" +
                                 $i18n.msg("dropdownPages").plain() +
                             "</option>" +
-                            "<option value='append'>" +
+                            "<option value='categories'>" +
                                 $i18n.msg("dropdownCategories").plain() +
                             "</option>" +
                         "</select>" +
