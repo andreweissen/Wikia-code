@@ -1,6 +1,6 @@
 /**
  * MassEdit/code.js
- * @file Allows for addition/deletion/replacement of content from pages
+ * @file Adds/deletes/replaces content from pages/categories/namespaces
  * @author Eizen <dev.wikia.com/wiki/User_talk:Eizen>
  * @external "mediawiki.util"
  * @external "jQuery"
@@ -38,8 +38,8 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
         meta: {
             author: "User:Eizen",
             created: "05/02/17",
-            lastEdit: "16/04/18",
-            version: "2.2.1"
+            lastEdit: "17/04/18",
+            version: "2.3.1"
         },
         hasRights: /(sysop|content-moderator|bot)/
             .test(wk.wgUserGroups.join(" ")),
@@ -370,6 +370,28 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
         },
 
         /**
+         * @method getNamespaceMembers
+         * @description As the name implies, this method returns the results of
+         *              a request for an inputted namespace's associated page
+         *              contents.
+         * @param {String} $namespace - Number of the namespace in question
+         * @return {JSON}
+         */
+        getNamespaceMembers: function ($namespace) {
+            return jQuery.ajax({
+                type: "GET",
+                url: mw.util.wikiScript("api"),
+                data: {
+                    action: "query",
+                    list: "allpages",
+                    aplimit: "max",
+                    apnamespace: $namespace,
+                    format: "json"
+                }
+            });
+        },
+
+        /**
          * @method getCategoryMembers
          * @description As the name implies, this method returns the results of
          *              a request for an inputted category's associated page
@@ -377,7 +399,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @param {String} $category - Name of the category in question
          * @return {JSON}
          */
-        getCategoryMembers: function($category) {
+        getCategoryMembers: function ($category) {
             return jQuery.ajax({
                 type: "GET",
                 url: mw.util.wikiScript("api"),
@@ -387,54 +409,77 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                     cmtitle: $category,
                     cmprop: "title",
                     cmdir: "desc",
-                    cmlimit: 500,
+                    cmlimit: "max",
                     format: "json"
                 }
             });
         },
 
         /**
-         * @method categoryHandler
-         * @description The code for the handling of category pages was
-         *              initially stored in <tt>MassEdit.main</tt>, but was
-         *              moved to a separate method for elegance's sake and for
-         *              ease of readability. A few modifications were made to
-         *              ensure all API requests were made prior to any handling
-         *              within the body of the <tt>done</tt> function.
+         * @method membersHandler
+         * @description This method, inspired by Java-style reflection, is a
+         *              general purpose handler for use by both namespace and
+         *              category bulk editing. The method accepts either the
+         *              <tt>getCategoryMembers</tt> or
+         *              <tt>getNamespaceMembers<tt> methods as the requests of
+         *              choice, running basically the same process with the
+         *              results of each once all calls have been completed.
+         *              <br />
+         *              <br />
+         *              Basically, once the calls have been made, the method
+         *              assembles all the pages from the request results and
+         *              pushes them into an array for processing by the
+         *              <tt>actionHandler</tt> method.
          * @param {String[]} $inputArray
          * @param {String} $newContent
          * @param {String} $toReplace
          * @param {int} $actionIndex
          * @param {String} $action
+         * @param {function} getMembers
+         * @param {String} $queryProperty
          * @returns {void}
          */
-        categoryHandler: function($inputArray, $newContent, $toReplace,
-                            $actionIndex, $action) {
+        membersHandler: function ($inputArray, $newContent, $toReplace,
+                $actionIndex, $action, getMembers, $queryProperty) {
 
             var that = this;
-            var $categories;
+            var $members;
             var $requests;
+            var $arguments;
             var $defer;
             var $data;
 
-            $categories = [];
+            $members = [];
             $requests = [];
+            $arguments = [];
 
-            $inputArray.forEach(function ($category) {
-                if (!$category.startsWith("Category:")) {
-                    $category = "Category:" + $category;
+            $inputArray.forEach(function ($member) {
+                if (
+                    $queryProperty === "categorymembers" &&
+                    !$member.startsWith("Category:")
+                ) {
+                    $member = "Category:" + $member;
                 }
 
-                if (that.isLegalPage($category)) {
-                    $categories.push($category);
-                    $requests.push(that.getCategoryMembers($category));
+                if (
+                    ( // If is category-based and member is legal
+                        $queryProperty === "categorymembers" &&
+                        that.isLegalPage($member)
+                    ) ||
+                    ( // If is namespace-based and member is integer
+                        $queryProperty === "allpages" &&
+                        $member.match(/^[0-9]+$/) !== null
+                    )
+                ) {
+                    $members.push($member);
+                    $requests.push(getMembers($member));
                 }
             });
 
             if (
-                !$categories.length ||
+                !$members.length ||
                 !$requests.length ||
-                $categories.length !== $requests.length
+                $members.length !== $requests.length
             ) {
                 return;
             }
@@ -443,12 +488,18 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             $defer = jQuery.when.apply(jQuery, $requests);
 
             $defer.done(function () {
-                jQuery.each(arguments, function ($index, $results) {
+                if ($requests.length === 1) {
+                    $arguments.push(arguments);
+                } else {
+                    $arguments = Array.prototype.slice.call(arguments);
+                }
+
+                jQuery.each($arguments, function ($index, $results) {
                     if ($results[1] === "success") {
-                        $data = $results[0].query.categorymembers;
+                        $data = $results[0].query[$queryProperty];
 
                         if ($data === undefined || $data.length === 0) {
-                            that.addLogEntry("noSuchPage", $categories[$index]);
+                            that.addLogEntry("noSuchPage", $members[$index]);
                             return;
                         }
 
@@ -487,7 +538,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @param {String} $action
          * @returns {void}
          */
-        actionHandler: function($inputArray, $newContent, $toReplace,
+        actionHandler: function ($inputArray, $newContent, $toReplace,
                 $actionIndex, $action) {
 
             var that = this;
@@ -596,16 +647,23 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             } else if ($actionIndex === 0 || $typeIndex === 0) {
                 this.addLogEntry("noOptionSelected");
                 return;
+            }
 
-            // If user is inputting categories instead of loose pages
-            } else if ($typeIndex === 2) {
-                that.categoryHandler($pagesArray, $newContent, $toReplace,
-                    $actionIndex, $action);
-
-            // Otherwise (loose pages, etc.)
-            } else {
+            switch ($typeIndex) {
+            case 1: // Loose pages
                 that.actionHandler($pagesArray, $newContent, $toReplace,
                     $actionIndex, $action);
+                break;
+            case 2: // Categories
+                that.membersHandler($pagesArray, $newContent, $toReplace,
+                    $actionIndex, $action, that.getCategoryMembers,
+                    "categorymembers");
+                break;
+            case 3: // Namespaces
+                that.membersHandler($pagesArray, $newContent, $toReplace,
+                    $actionIndex, $action, that.getNamespaceMembers,
+                    "allpages");
+                break;
             }
         },
 
@@ -670,6 +728,9 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                             "</option>" +
                             "<option value='categories'>" +
                                 $i18n.msg("dropdownCategories").plain() +
+                            "</option>" +
+                            "<option value='namespaces'>" +
+                                $i18n.msg("dropdownNamespaces").plain() +
                             "</option>" +
                         "</select>" +
                         "<br />" +
