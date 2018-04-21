@@ -10,7 +10,7 @@
 
 /*jslint browser, this:true */
 /*global mw, jQuery, window, require, wk */
- 
+
 require(["mw", "wikia.window"], function (mw, wk) {
     "use strict";
 
@@ -259,7 +259,13 @@ require(["mw", "wikia.window"], function (mw, wk) {
             $lang.useUserLang();
             $i18n = $lang;
 
-            var $fileNames = {
+            var $config;
+            var $fileNames;
+            var $extraLinks;
+            var $assembledFiles;
+            var $location = this.returnNode();
+
+            $fileNames = {
                 standard: [
                     "Chat",
                     "Common",
@@ -272,8 +278,27 @@ require(["mw", "wikia.window"], function (mw, wk) {
                     "JSPages"
                 ]
             };
-            var $location = this.returnNode();
-            var $assembledFiles = this.assemblePageNames($fileNames);
+
+            $config = jQuery.extend(
+                {
+                    replaceAllDefaultLinks: false,
+                    linkSet: {}
+                },
+                window.customCodeQuickLinks
+            );
+
+            if ($config.replaceAllDefaultLinks) {
+                $assembledFiles = $config.linkSet;
+            } else {
+                $assembledFiles = this.assemblePageNames($fileNames);
+                $extraLinks = $config.linkSet;
+
+                Object.keys($extraLinks).forEach(function ($array) {
+                    $extraLinks[$array].forEach(function ($link) {
+                        $assembledFiles[$array].push($link);
+                    });
+                });
+            }
 
             if (this.skinFamily === "oasis") {
                 var $railModule = this.constructRailModule(
