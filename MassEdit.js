@@ -38,8 +38,8 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
         meta: {
             author: "User:Eizen",
             created: "05/02/17",
-            lastEdit: "17/04/18",
-            version: "2.3.1"
+            lastEdit: "24/05/18",
+            version: "2.4.1"
         },
         hasRights: /(sysop|content-moderator|bot)/
             .test(wk.wgUserGroups.join(" ")),
@@ -141,24 +141,26 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             var that = this;
 
             mw.util.addCSS(
-                ".massEdit-menu {" +
+                ".massEdit-menu," +
+                ".massEdit-textbox {" +
                     "width: 100%;" +
+                    "padding: 0;" +
                 "}" +
                 ".massEdit-textarea {" +
-                    "height: 55px;" +
+                    "height: 50px;" +
                     "width: 100%;" +
                     "padding: 0;" +
                     "overflow: auto;" +
                 "}" +
                 "#massEdit-log {" +
                     "height: 55px;" +
-                    "width: 98%;" +
+                    "width: 100%;" +
                     "border: 1px solid;" +
                     "font-family: monospace;" +
                     "background: #fff;" +
                     "color: #aeaeae;" +
                     "overflow: auto;" +
-                    "padding:5px;" +
+                    "padding:0;" +
                 "}"
             );
 
@@ -236,12 +238,15 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          *              relevant timestamp info. Used exclusively by the find
          *              and dropdown option.
          * @param {String} $action - Editing action (prepend, append, replace)
+         * @param {String} $editSummary - Edit summary
          * @param {String} $page - The page in question
          * @param {String} $newContent - New text to replace the target
          * @param {String} $replace - The target to be replaced in the callback
          * @param {function} callback - The callback handler
          */
-        getContent: function ($action, $page, $newContent, $replace, callback) {
+        getContent: function ($action, $editSummary, $page, $newContent,
+                $replace, callback) {
+
             var that = this;
             this.api.get({
                 action: "query",
@@ -257,6 +262,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                     callback(           // handleContent()
                         that,           // this
                         $action,        // "replace"
+                        $editSummary,   // "#massEdit-summary-value"
                         $data,          // $data
                         $page,          // $pagesArray[$counter]
                         $newContent,    // "#massEdit-content-value"
@@ -274,14 +280,15 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          *              find and replace dropdown option.
          * @param {this} that - Scope variable
          * @param {String} $action - Editing action (prepend, append, replace)
+         * @param {String} $editSummary - Edit summary
          * @param {JSON} $data - Passed data from <code>getContent</code>
          * @param {String} $page - Specific page in question
          * @param {String} $newContent - New text to replace the target
          * @param {String} $replaceThis - Text to be replaced by $newContent
          * @returns {void}
          */
-        handleContent: function (that, $action, $data, $page, $newContent,
-                $replaceThis) {
+        handleContent: function (that, $action, $editSummary, $data, $page,
+                $newContent, $replaceThis) {
 
             // Check if page actually exists
             if (Object.keys($data.query.pages)[0] === "-1") {
@@ -309,8 +316,8 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                     "<br />"
                 );
             } else {
-                that.editPage(that, $page, $newText, $action, $timestamp,
-                    $starttimestamp, $token);
+                that.editPage(that, $page, $newText, $action, $editSummary,
+                    $timestamp, $starttimestamp, $token);
             }
         },
 
@@ -324,13 +331,14 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @param {String} $page - The page to be edited
          * @param {String} $content - The content to be added to the page
          * @param {String} $action - Editing action (prepend, append, replace)
+         * @param {String} $editSummary - Edit summary
          * @param {String} $timestamp - Optional, for replace option only
          * @param {String} $starttimestamp - Optional, for replace option only
          * @param {String} $token - Optional, for replace option only
          * @returns {void}
          */
-        editPage: function (that, $page, $content, $action, $timestamp,
-                $starttimestamp, $token) {
+        editPage: function (that, $page, $content, $action, $editSummary,
+                $timestamp, $starttimestamp, $token) {
 
             // Default base properties
             var $params = {
@@ -338,7 +346,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                 minor: true,
                 bot: true,
                 title: $page,
-                summary: this.config.editSummary
+                summary: $editSummary
             };
 
             // Set additional Object properties depending on action to be taken
@@ -435,12 +443,14 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @param {String} $toReplace
          * @param {int} $actionIndex
          * @param {String} $action
+         * @param {String} $editSummary
          * @param {function} getMembers
          * @param {String} $queryProperty
          * @returns {void}
          */
         membersHandler: function ($inputArray, $newContent, $toReplace,
-                $actionIndex, $action, getMembers, $queryProperty) {
+                $actionIndex, $action, $editSummary, getMembers,
+                $queryProperty) {
 
             var that = this;
             var $members;
@@ -511,7 +521,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
 
                 if ($inputArray.length) {
                     that.actionHandler($inputArray, $newContent, $toReplace,
-                        $actionIndex, $action);
+                        $actionIndex, $action, $editSummary);
                 }
             });
         },
@@ -536,10 +546,11 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
          * @param {String} $toReplace
          * @param {int} $actionIndex
          * @param {String} $action
+         * @param {String} $editSummary
          * @returns {void}
          */
         actionHandler: function ($inputArray, $newContent, $toReplace,
-                $actionIndex, $action) {
+                $actionIndex, $action, $editSummary) {
 
             var that = this;
             var $counter = 0;
@@ -555,12 +566,8 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
 
                 $editInterval = setInterval(function () {
                     if (that.isLegalPage($inputArray[$counter])) {
-                        that.editPage(
-                            that,
-                            $inputArray[$counter],
-                            $newContent,
-                            $action
-                        );
+                        that.editPage(that, $inputArray[$counter], $newContent,
+                            $action, $editSummary);
                     }
                     $counter++;
                     if ($counter === $inputArray.length) {
@@ -573,8 +580,9 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
 
                 $editInterval = setInterval(function () {
                     if (that.isLegalPage($inputArray[$counter])) {
-                        that.getContent($action, $inputArray[$counter],
-                            $newContent, $toReplace, that.handleContent);
+                        that.getContent($action, $editSummary,
+                            $inputArray[$counter], $newContent, $toReplace,
+                            that.handleContent);
                     }
 
                     $counter++;
@@ -612,6 +620,7 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             var $newContent = jQuery("#massEdit-content-value")[0].value;
             var $toReplace = jQuery("#massEdit-replaceThis-value")[0].value;
             var $pagesInput = jQuery("#massEdit-pages-value")[0].value;
+            var $editSummary = jQuery("#massEdit-summary-value")[0].value;
             var $pagesArray = $pagesInput.split(/[\n]+/);
 
             // Dropdown menu
@@ -627,19 +636,16 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
 
             // No pages included
             } else if (!$pagesInput) {
-                jQuery("#massEdit-modal-form")[0].reset();
                 this.addLogEntry("noPages");
                 return;
 
             // Is either append/prepend with no content input included
             } else if ($action !== "replace" && !$newContent) {
-                jQuery("#massEdit-modal-form")[0].reset();
                 this.addLogEntry("noContent");
                 return;
 
             // Is find-and-replace with no target content included
             } else if ($action === "replace" && !$toReplace) {
-                jQuery("#massEdit-modal-form")[0].reset();
                 this.addLogEntry("noTarget");
                 return;
 
@@ -647,22 +653,27 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             } else if ($actionIndex === 0 || $typeIndex === 0) {
                 this.addLogEntry("noOptionSelected");
                 return;
+
+            // If edit summary is greater than permitted max of 800 characters
+            } else if ($editSummary.length > 800) {
+                this.addLogEntry("overlongSummary");
+                return;
             }
 
             switch ($typeIndex) {
             case 1: // Loose pages
                 that.actionHandler($pagesArray, $newContent, $toReplace,
-                    $actionIndex, $action);
+                    $actionIndex, $action, $editSummary);
                 break;
             case 2: // Categories
                 that.membersHandler($pagesArray, $newContent, $toReplace,
-                    $actionIndex, $action, that.getCategoryMembers,
-                    "categorymembers");
+                    $actionIndex, $action, $editSummary,
+                    that.getCategoryMembers, "categorymembers");
                 break;
             case 3: // Namespaces
                 that.membersHandler($pagesArray, $newContent, $toReplace,
-                    $actionIndex, $action, that.getNamespaceMembers,
-                    "allpages");
+                    $actionIndex, $action, $editSummary,
+                    that.getNamespaceMembers, "allpages");
                 break;
             }
         },
@@ -682,15 +693,9 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
             $i18n.useContentLang();
 
             this.api = new mw.Api();
-            this.config = jQuery.extend(
-                {
-                    editInterval: 1000,
-                    editSummary: $i18n.msg("meEditSummary").plain() +
-                        " ([[w:c:dev:MassEdit|" +
-                        $i18n.msg("meScript").plain() + "]])"
-                },
-                window.massEditConfig
-            );
+            this.config = jQuery.extend({
+                    editInterval: 1000
+            }, window.massEditConfig);
             $i18n.useUserLang();
 
             var $modalHTML =
@@ -760,6 +765,13 @@ require(["jquery", "mw", "wikia.window", "wikia.ui.factory"],
                             "class='massEdit-textarea' placeholder='" +
                             $i18n.msg("modalPagesPlaceholder").plain() +
                         "'/>" +
+                        "<br />" +
+                    "</p>" +
+                    "<br />" +
+                    "<p>" + $i18n.msg("modalSummaryTitle").plain() +
+                        "<br />" +
+                        "<input type='textbox' id='massEdit-summary-value'" +
+                            "class='massEdit-textbox' />" +
                         "<br />" +
                     "</p>" +
                 "</fieldset>" +
