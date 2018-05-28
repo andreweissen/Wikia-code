@@ -80,27 +80,20 @@ require(["jquery", "mw", "wikia.window"], function (jQuery, mw, wk) {
             var $userNameLink =
                     "<img id='pc-avatar'/><a href='/wiki/User:" +
                     $data.user + "'>" + $data.user + "</a> " +
+                    "<span class='mw-usertoollinks'>" +
                     "(<a href='/wiki/User_talk:" + $data.user + "'>" +
                     $i18n.msg("talk").plain() + "</a> | <a href='/wiki/" +
                     "Special:Contributions/" + $data.user + "'>" +
-                    $i18n.msg("contribs").plain() + "</a>)";
+                    $i18n.msg("contribs").plain() + "</a>)</span>";
 
             // Placement of PC before LE if possible
             if (jQuery("#lastEdited").exists()) {
                 jQuery($divElement).insertBefore("#lastEdited");
+            } else if (wk.skin === "oasis") {
+                jQuery($divElement)
+                    .insertAfter("#PageHeader .page-header__title");
             } else {
-                switch (wk.skin) {
-                case "oasis":
-                case "wikia":
-                    jQuery($divElement)
-                        .appendTo("#PageHeader .page-header__title");
-                    break;
-                case "monobook":
-                case "uncyclopedia":
-                case "wowwiki":
-                    jQuery($divElement).prependTo("#bodyContent");
-                    break;
-                }
+                jQuery($divElement).insertBefore("#bodyContent");
             }
 
             /**
